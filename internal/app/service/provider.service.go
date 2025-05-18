@@ -27,7 +27,7 @@ func NewAuthProviderService(queries db.Querier) *AuthProviderService {
 }
 
 func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCreate) (int, error) {
-	id, err := s.queries.CreateAuthProvider(ctx, d.ToDB())
+	id, err := s.queries.AuthProviderCreate(ctx, d.ToDB())
 	if err != nil {
 		return 0, errs.ErrAlreadyExists
 	}
