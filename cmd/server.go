@@ -126,7 +126,7 @@ func startMBServer(a *application) error {
 		return errors.New("startMBServer: msgBroker is closed")
 	}
 
-	a.mbControllers.Connect()
+	a.mbControllers.Connect(a.msgBroker)
 
 	return nil
 }

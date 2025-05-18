@@ -97,7 +97,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 	provider, _ := c.providerService.GetByProviderUserId(reqCtx, twitchUser.ID, "twitch")
 	if provider != nil {
 		c.logger.DebugContext(reqCtx, "provider already exists, updating tokens", "providerID", provider.ID)
-		err = c.providerService.Update(reqCtx, data.AuthProviderUpdateTokens{
+		err = c.providerService.UpdateTokens(reqCtx, data.AuthProviderUpdateTokens{
 			ID:           provider.ID,
 			AccessToken:  token.AccessToken,
 			RefreshToken: &token.RefreshToken,

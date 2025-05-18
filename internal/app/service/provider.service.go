@@ -35,7 +35,7 @@ func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCre
 	return int(id), nil
 }
 
-func (s *AuthProviderService) Update(ctx context.Context, d data.AuthProviderUpdateTokens) error {
+func (s *AuthProviderService) UpdateTokens(ctx context.Context, d data.AuthProviderUpdateTokens) error {
   count, err := s.queries.AuthProviderUpdateTokens(ctx, d.ToDB())
   if err != nil {
     return errs.ErrInternal

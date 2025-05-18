@@ -38,7 +38,7 @@ type application struct {
 	services       *service.Services
 	apiControllers echoControllers.Controller
 	apiMiddlewares *middleware.Middlewares
-	mbControllers  mbControllers.Controller
+	mbControllers  mbControllers.NatsController
 }
 
 func main() {
@@ -74,8 +74,8 @@ func main() {
 		SessionService:  service.NewSessionService(app.queries),
 	}
 
-  // load middlewares
-  app.apiMiddlewares = middleware.New()
+	// load middlewares
+	app.apiMiddlewares = middleware.New()
 
 	// load api controllers
 	app.apiControllers = &api.Controllers{
@@ -89,7 +89,8 @@ func main() {
 
 	// load message broker controllers
 	app.mbControllers = &mb.Controllers{
-		SessionController: mb.NewSessionController(app.msgBroker, app.services.SessionService),
+		SessionController:  mb.NewSessionController(app.services.SessionService),
+		ProviderController: mb.NewProviderController(app.services.ProviderService),
 	}
 
 	app.Start()

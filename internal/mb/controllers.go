@@ -6,14 +6,16 @@ import (
 
 	"arnobot-shared/controllers/mb"
 	"arnobot-shared/trace"
+	"github.com/nats-io/nats.go"
 )
 
 type Controllers struct {
-	SessionController controllers.Controller
+	SessionController  controllers.NatsController
+	ProviderController controllers.NatsController
 }
 
-func (c *Controllers) Connect() {
-	c.SessionController.Connect()
+func (c *Controllers) Connect(conn *nats.Conn) {
+	c.SessionController.Connect(conn)
 }
 
 func newControllerContext(traceID string) (context.Context, context.CancelFunc) {
