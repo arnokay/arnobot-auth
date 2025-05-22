@@ -15,5 +15,6 @@ type ProviderToken struct {
 	AccessToken  string
 	RefreshToken string
 	TokenType    string
+	Scopes       []string
 	Expiry       time.Time
 }
