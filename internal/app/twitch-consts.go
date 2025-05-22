@@ -6,5 +6,4 @@ var TWITCH_SCOPES = []string{
 	"user:bot",
 	"channel:bot",
 	"bits:read",
-	// "user:read:email",
 }
