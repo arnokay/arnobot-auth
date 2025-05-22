@@ -30,26 +30,20 @@ func (m *Middlewares) ErrHandler(err error, c echo.Context) {
 		return
 	}
 	status := http.StatusInternalServerError
-	message := "Internal Server Error"
-	code := errs.CodeInternal
+  responseErr := errs.ErrInternal
 
 	var appErr *errs.AppError
 	if errors.As(err, &appErr) {
 		status = errs.ToHTTPStatus(appErr)
-		message = appErr.Error()
-		code = appErr.Code
+    responseErr = *appErr
 	} else {
 		if he, ok := err.(*echo.HTTPError); ok {
 			status = he.Code
-			message = he.Message.(string)
-			code = errs.CodeHTTP
+      responseErr = errs.New(errs.CodeHTTP, he.Error(), he)
 		}
 	}
 
-	c.JSON(status, map[string]string{
-		"error": message,
-		"code":  code.String(),
-	})
+	c.JSON(status, responseErr)
 }
 
 func (m *Middlewares) AttachTraceID(next echo.HandlerFunc) echo.HandlerFunc {
