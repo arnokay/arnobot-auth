@@ -11,7 +11,6 @@ import (
 	"arnobot-shared/pkg"
 	"arnobot-shared/pkg/assert/panic"
 	"arnobot-shared/pkg/errs"
-
 	"github.com/nicklaw5/helix/v2"
 	"github.com/thanhpk/randstr"
 
@@ -106,7 +105,7 @@ func (s *TwitchApiService) StoreState(ctx context.Context, state string) error {
 func (s *TwitchApiService) IsStateExists(ctx context.Context, state string) bool {
 	_, err := s.store.Get(state)
 	if err != nil {
-    s.logger.Error("store error", "err", err)
+		s.logger.Error("store error", "err", err)
 		return false
 	}
 
@@ -124,6 +123,7 @@ func (s *TwitchApiService) ExchangeCode(ctx context.Context, code string) (Provi
 		AccessToken:  token.Data.AccessToken,
 		RefreshToken: token.Data.RefreshToken,
 		TokenType:    "Bearer",
+		Scopes:       token.Data.Scopes,
 		Expiry:       time.Now().Add(time.Duration(token.Data.ExpiresIn) * time.Second),
 	}, nil
 }
