@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"arnobot-shared/middlewares"
 	"github.com/labstack/echo/v4"
 
 	"arnobot-auth/internal/app/config"
@@ -137,12 +138,12 @@ func startAPIServer(a *application) error {
 	e.HideBanner = true
 	a.api = e
 
-	e.Use(a.apiMiddlewares.AttachTraceID)
+	e.Use(middlewares.AttachTraceID)
 
 	mainGroup := e.Group("/v1")
 	a.apiControllers.Routes(mainGroup)
 
-	e.HTTPErrorHandler = a.apiMiddlewares.ErrHandler
+	e.HTTPErrorHandler = middlewares.ErrHandler
 
 	err := e.Start(fmt.Sprintf(":%v", config.Config.Global.Port))
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
