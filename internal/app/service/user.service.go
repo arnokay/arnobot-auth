@@ -4,31 +4,32 @@ import (
 	"context"
 	"log/slog"
 
-	"arnobot-shared/pkg/errs"
 	"arnobot-shared/applog"
-	"arnobot-shared/db"
+	"arnobot-shared/pkg/errs"
+	"arnobot-shared/storage"
 )
 
 type UserService struct {
-	queries db.Querier
-	logger  *slog.Logger
+	storage storage.Storager
+
+	logger *slog.Logger
 }
 
-func NewUserService(queries db.Querier) *UserService {
-  logger := applog.NewServiceLogger("UserService")
+func NewUserService(store storage.Storager) *UserService {
+	logger := applog.NewServiceLogger("UserService")
 
 	return &UserService{
 		logger:  logger,
-		queries: queries,
+		storage: store,
 	}
 }
 
-func (s *UserService) CreateUser(ctx context.Context) (int, error) {
-	id, err := s.queries.UserCreate(ctx)
+func (s *UserService) CreateUser(ctx context.Context, username string) (int32, error) {
+	id, err := s.storage.Query(ctx).UserCreate(ctx, username)
 	if err != nil {
 		s.logger.Warn("cannot create user", "err", err)
 		return 0, errs.ErrAlreadyExists
 	}
 
-	return int(id), nil
+	return id, nil
 }

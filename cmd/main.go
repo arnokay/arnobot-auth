@@ -13,9 +13,12 @@ import (
 	"arnobot-shared/pkg"
 	"arnobot-shared/pkg/assert"
 	"arnobot-shared/pkg/mapcacher"
+	"arnobot-shared/storage"
+  sharedService "arnobot-shared/service"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 
 	"arnobot-auth/internal/api"
 	"arnobot-auth/internal/api/middleware"
@@ -31,10 +34,11 @@ type application struct {
 
 	db        *pgxpool.Pool
 	queries   db.Querier
-	store     pkg.Cacher
+	cache     pkg.Cacher
 	msgBroker *nats.Conn
 	api       *echo.Echo
 
+	storage        storage.Storager
 	services       *service.Services
 	apiControllers echoControllers.Controller
 	apiMiddlewares *middleware.Middlewares
@@ -53,25 +57,27 @@ func main() {
 
 	// load db
 	dbConn := openDB()
-	defer dbConn.Close()
-	queries := db.New(dbConn)
 	app.db = dbConn
-	app.queries = queries
 
 	// load cache
-	store := mapcacher.New()
-	app.store = &store
+	cache := mapcacher.New()
+	app.cache = &cache
 
 	// load message broker
-	mbConn := openMB()
+	mbConn, _, _ := openMB()
 	app.msgBroker = mbConn
+
+  // load storage
+  store := storage.NewStorage(app.db)
+  app.storage = store
 
 	// load services
 	app.services = &service.Services{
-		TwitchService:   service.NewTwitchApiService(app.store),
-		ProviderService: service.NewAuthProviderService(app.queries),
-		UserService:     service.NewUserService(app.queries),
-		SessionService:  service.NewSessionService(app.queries),
+		TwitchService:   service.NewTwitchApiService(app.cache),
+		ProviderService: service.NewAuthProviderService(app.storage),
+		UserService:     service.NewUserService(app.storage),
+		SessionService:  service.NewSessionService(app.storage),
+    TransactionService: sharedService.NewPgxTransactionService(app.db),
 	}
 
 	// load middlewares
@@ -84,6 +90,7 @@ func main() {
 			app.services.UserService,
 			app.services.ProviderService,
 			app.services.SessionService,
+      app.services.TransactionService,
 		),
 	}
 
@@ -141,9 +148,14 @@ func openDB() *pgxpool.Pool {
 // 	return db
 // }
 
-func openMB() *nats.Conn {
+func openMB() (*nats.Conn, jetstream.JetStream, jetstream.KeyValue) {
 	nc, err := nats.Connect(config.Config.MB.URL)
 	assert.NoError(err, "openMB: cannot open message broker connection")
 
-	return nc
+	js, err := jetstream.New(nc)
+	kv, err := js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
+		Bucket: "default-auth",
+	})
+
+	return nc, js, kv
 }

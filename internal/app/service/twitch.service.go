@@ -4,28 +4,30 @@ import (
 	"context"
 	"log/slog"
 
-	"arnobot-shared/pkg/errs"
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
-	"arnobot-shared/db"
+	"arnobot-shared/pkg/errs"
+	"arnobot-shared/storage"
 )
 
 type TwitchService struct {
-	queries db.Querier
+	storage storage.Storager
 	logger  *slog.Logger
 }
 
-func NewTwitchService(queries db.Querier) *TwitchService {
+func NewTwitchService(
+	store storage.Storager,
+) *TwitchService {
 	logger := applog.NewServiceLogger("TwitchService")
 
 	return &TwitchService{
 		logger:  logger,
-		queries: queries,
+		storage: store,
 	}
 }
 
 func (s *TwitchService) Create(ctx context.Context, user data.TwitchUserCreate) (string, error) {
-	id, err := s.queries.TwitchUserCreate(ctx, user.ToDB())
+	id, err := s.storage.Query(ctx).TwitchUserCreate(ctx, user.ToDB())
 	if err != nil {
 		return "", errs.ErrAlreadyExists
 	}

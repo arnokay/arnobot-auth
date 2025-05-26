@@ -19,13 +19,15 @@ import (
 )
 
 type TwitchApiService struct {
-	store  pkg.Cacher
+	cache  pkg.Cacher
 	helix  *helix.Client
 	logger *slog.Logger
 	cfg    *config.ProviderConfig
 }
 
-func NewTwitchApiService(store pkg.Cacher) *TwitchApiService {
+func NewTwitchApiService(
+  cache pkg.Cacher,
+) *TwitchApiService {
 	cfg, ok := config.Config.Providers["twitch"]
 	assert.Assert(ok, "TwitchService: config is not loaded for \"twitch\" provider")
 
@@ -35,13 +37,10 @@ func NewTwitchApiService(store pkg.Cacher) *TwitchApiService {
 		RedirectURI:  cfg.RedirectURI,
 	})
 	assert.NoError(err, "TwitchService: helix client error")
-
-	assert.Assert(store != nil, "TwitchService: store is nil")
-
 	logger := applog.NewServiceLogger("TwitchApiService")
 
 	return &TwitchApiService{
-		store:  store,
+		cache:  cache,
 		helix:  client,
 		logger: logger,
 		cfg:    cfg,
@@ -93,7 +92,7 @@ func (s *TwitchApiService) GenerateState(ctx context.Context, userId *int) strin
 }
 
 func (s *TwitchApiService) StoreState(ctx context.Context, state string) error {
-	err := s.store.Set(state, "")
+	err := s.cache.Set(state, "")
 	if err != nil {
 		s.logger.Error("cannot store state", "state", state, "err", err)
 		return errs.ErrInternal
@@ -103,7 +102,7 @@ func (s *TwitchApiService) StoreState(ctx context.Context, state string) error {
 }
 
 func (s *TwitchApiService) IsStateExists(ctx context.Context, state string) bool {
-	_, err := s.store.Get(state)
+	_, err := s.cache.Get(state)
 	if err != nil {
 		s.logger.Error("store error", "err", err)
 		return false

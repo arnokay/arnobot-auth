@@ -4,51 +4,55 @@ import (
 	"context"
 	"log/slog"
 
-	"arnobot-shared/pkg/errs"
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
 	"arnobot-shared/db"
+	"arnobot-shared/pkg/errs"
+	"arnobot-shared/storage"
 )
 
 type AuthProviderService struct {
-	queries db.Querier
+	storage storage.Storager
 	logger  *slog.Logger
 }
 
-func NewAuthProviderService(queries db.Querier) *AuthProviderService {
-	serviceName := "ProviderService"
+func NewAuthProviderService(store storage.Storager) *AuthProviderService {
+	serviceName := "provider-service"
 
-  logger := applog.NewServiceLogger(serviceName)
+	logger := applog.NewServiceLogger(serviceName)
 
 	return &AuthProviderService{
-		queries: queries,
+		storage: store,
 		logger:  logger,
 	}
 }
 
 func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCreate) (int, error) {
-	id, err := s.queries.AuthProviderCreate(ctx, d.ToDB())
+	id, err := s.storage.Query(ctx).AuthProviderCreate(ctx, d.ToDB())
 	if err != nil {
+		s.logger.WarnContext(ctx, "cannot create auth provider", "err", err)
 		return 0, errs.ErrAlreadyExists
 	}
 
 	return int(id), nil
 }
 
-func (s *AuthProviderService) UpdateTokens(ctx context.Context, d data.AuthProviderUpdateTokens) error {
-  count, err := s.queries.AuthProviderUpdateTokens(ctx, d.ToDB())
-  if err != nil {
-    return errs.ErrInternal
-  }
-  if count == 0 {
-    return errs.ErrNotFound
-  }
+func (s *AuthProviderService) UpdateTokens(ctx context.Context, id int32, d data.AuthProviderUpdateTokens) error {
+	count, err := s.storage.Query(ctx).AuthProviderUpdateTokens(ctx, d.ToDB(id))
+	if err != nil {
+    s.logger.ErrorContext(ctx, "cannot update tokens", "err", err, "provider_id", id)
+		return errs.ErrInternal
+	}
+	if count == 0 {
+    s.logger.DebugContext(ctx, "cannot find auth provider", "provider_id", id)
+		return errs.ErrNotFound
+	}
 
-  return nil
+	return nil
 }
 
 func (s *AuthProviderService) GetByProviderUserId(ctx context.Context, id string, providerName string) (*data.AuthProvider, error) {
-	dbProvider, err := s.queries.AuthProviderGetByProviderUserId(ctx, db.AuthProviderGetByProviderUserIdParams{
+	dbProvider, err := s.storage.Query(ctx).AuthProviderGetByProviderUserId(ctx, db.AuthProviderGetByProviderUserIdParams{
 		ProviderUserID: id,
 		Provider:       providerName,
 	})

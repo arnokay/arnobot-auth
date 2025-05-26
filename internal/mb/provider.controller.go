@@ -77,7 +77,7 @@ func (c *ProviderController) updateTokens(msg *nats.Msg) {
 	ctx, cancel := newControllerContext(req.TraceID)
 	defer cancel()
 
-	err = c.providerService.UpdateTokens(ctx, req.Data)
+	err = c.providerService.UpdateTokens(ctx, req.Data.ID, req.Data.Data)
 	if err != nil {
 		res.ToFailErr(err)
 		b, _ := res.Encode()

@@ -2,13 +2,16 @@ package service
 
 import (
 	"time"
+
+	"arnobot-shared/service"
 )
 
 type Services struct {
-	TwitchService   *TwitchApiService
-	ProviderService *AuthProviderService
-	UserService     *UserService
-	SessionService  *SessionService
+	TwitchService      *TwitchApiService
+	ProviderService    *AuthProviderService
+	UserService        *UserService
+	SessionService     *SessionService
+	TransactionService service.ITransactionService
 }
 
 type ProviderToken struct {
