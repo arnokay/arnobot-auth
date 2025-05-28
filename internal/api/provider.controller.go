@@ -92,6 +92,8 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		return errs.ErrInvalidInput
 	}
 
+  // TODO: check token.Scopes
+
 	twitchUser, err := c.twitchApiService.GetUserInfoFromAccessToken(reqCtx, token.AccessToken)
 	if err != nil {
 		return err
