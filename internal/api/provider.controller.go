@@ -141,7 +141,10 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		return err
 	}
 
-  c.transactionService.Commit(txCtx)
+  err = c.transactionService.Commit(txCtx)
+  if err != nil {
+    return err
+  }
 
 	// TODO: change to redirect to frontend
 	return ctx.JSON(http.StatusOK, session)
