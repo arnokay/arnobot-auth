@@ -40,15 +40,31 @@ func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCre
 func (s *AuthProviderService) UpdateTokens(ctx context.Context, id int32, d data.AuthProviderUpdateTokens) error {
 	count, err := s.storage.Query(ctx).AuthProviderUpdateTokens(ctx, d.ToDB(id))
 	if err != nil {
-    s.logger.ErrorContext(ctx, "cannot update tokens", "err", err, "provider_id", id)
+		s.logger.ErrorContext(ctx, "cannot update tokens", "err", err, "provider_id", id)
 		return errs.ErrInternal
 	}
 	if count == 0 {
-    s.logger.DebugContext(ctx, "cannot find auth provider", "provider_id", id)
+		s.logger.DebugContext(ctx, "cannot find auth provider", "provider_id", id)
 		return errs.ErrNotFound
 	}
 
 	return nil
+}
+
+func (s *AuthProviderService) Get(ctx context.Context, arg data.AuthProviderGet) (*data.AuthProvider, error) {
+  if arg.ProviderUserID != nil && arg.UserID != nil {
+    s.logger.DebugContext(ctx, "error: tried to use providerUserID and userID", "arg", arg)
+    return nil, errs.ErrInvalidInput
+  }
+	dbProvider, err := s.storage.Query(ctx).AuthProviderGet(ctx, arg.ToDB())
+	if err != nil {
+		s.logger.DebugContext(ctx, "cannot find provider", "err", err, "arg", arg)
+		return nil, errs.ErrNotFound
+	}
+
+	provider := data.NewProviderAuthFromDB(dbProvider)
+
+	return &provider, nil
 }
 
 func (s *AuthProviderService) GetByProviderUserId(ctx context.Context, id string, providerName string) (*data.AuthProvider, error) {

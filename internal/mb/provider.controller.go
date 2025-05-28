@@ -49,7 +49,7 @@ func (c *ProviderController) get(msg *nats.Msg) {
 	ctx, cancel := newControllerContext(req.TraceID)
 	defer cancel()
 
-	provider, err := c.providerService.GetByProviderUserId(ctx, req.Data.ProviderUserID, req.Data.Provider)
+	provider, err := c.providerService.Get(ctx, req.Data)
 	if err != nil {
 		res.ToFailErr(err)
 		b, _ := res.Encode()
