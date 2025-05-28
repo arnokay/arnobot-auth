@@ -107,6 +107,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
   }
   defer c.transactionService.Rollback(txCtx)
 
+  // TODO: add database level errors handling so you could distinguish NotFound and Connection errors
 	provider, _ := c.providerService.GetByProviderUserId(txCtx, twitchUser.ID, "twitch")
 	if provider != nil {
 		c.logger.DebugContext(txCtx, "provider already exists, updating tokens", "providerID", provider.ID)
