@@ -16,6 +16,7 @@ type Controllers struct {
 
 func (c *Controllers) Connect(conn *nats.Conn) {
 	c.SessionController.Connect(conn)
+  c.ProviderController.Connect(conn)
 }
 
 func newControllerContext(traceID string) (context.Context, context.CancelFunc) {

@@ -13,8 +13,8 @@ import (
 	"arnobot-shared/pkg"
 	"arnobot-shared/pkg/assert"
 	"arnobot-shared/pkg/mapcacher"
+	sharedService "arnobot-shared/service"
 	"arnobot-shared/storage"
-  sharedService "arnobot-shared/service"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
@@ -67,18 +67,18 @@ func main() {
 	mbConn, _, _ := openMB()
 	app.msgBroker = mbConn
 
-  // load storage
-  store := storage.NewStorage(app.db)
-  app.storage = store
+	// load storage
+	store := storage.NewStorage(app.db)
+	app.storage = store
 
 	// load services
-	app.services = &service.Services{
-		TwitchService:   service.NewTwitchApiService(app.cache),
-		ProviderService: service.NewAuthProviderService(app.storage),
-		UserService:     service.NewUserService(app.storage),
-		SessionService:  service.NewSessionService(app.storage),
-    TransactionService: sharedService.NewPgxTransactionService(app.db),
-	}
+	services := &service.Services{}
+	services.TwitchService = service.NewTwitchApiService(app.cache)
+	services.ProviderService = service.NewAuthProviderService(app.storage)
+	services.UserService = service.NewUserService(app.storage)
+	services.SessionService = service.NewSessionService(app.storage)
+	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
+	app.services = services
 
 	// load middlewares
 	app.apiMiddlewares = middleware.New()
@@ -90,7 +90,7 @@ func main() {
 			app.services.UserService,
 			app.services.ProviderService,
 			app.services.SessionService,
-      app.services.TransactionService,
+			app.services.TransactionService,
 		),
 	}
 

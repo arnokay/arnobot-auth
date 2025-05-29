@@ -48,6 +48,7 @@ func (c *ProviderController) get(msg *nats.Msg) {
 
 	ctx, cancel := newControllerContext(req.TraceID)
 	defer cancel()
+  res.TraceID = req.TraceID
 
 	provider, err := c.providerService.Get(ctx, req.Data)
 	if err != nil {
@@ -76,6 +77,7 @@ func (c *ProviderController) updateTokens(msg *nats.Msg) {
 
 	ctx, cancel := newControllerContext(req.TraceID)
 	defer cancel()
+  res.TraceID = req.TraceID
 
 	err = c.providerService.UpdateTokens(ctx, req.Data.ID, req.Data.Data)
 	if err != nil {

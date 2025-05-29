@@ -7,6 +7,7 @@ import (
 	"arnobot-shared/mbtypes"
 	"arnobot-shared/pkg/errs"
 	"arnobot-shared/topics"
+
 	"github.com/nats-io/nats.go"
 
 	"arnobot-auth/internal/app/service"
@@ -40,6 +41,7 @@ func (c *SessionController) exchangeTokenForUser(msg *nats.Msg) {
 
 	ctx, cancel := newControllerContext(req.TraceID)
 	defer cancel()
+  res.TraceID = req.TraceID
 
 	user, err := c.sessionService.GetTokenOwner(ctx, req.Data)
 	if err != nil {
@@ -63,6 +65,7 @@ func (c *SessionController) validate(msg *nats.Msg) {
 
 	ctx, cancel := newControllerContext(req.TraceID)
 	defer cancel()
+  res.TraceID = req.TraceID
 
 	isValid, err := c.sessionService.IsValidToken(ctx, req.Data)
 	if err != nil {

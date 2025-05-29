@@ -7,7 +7,6 @@ import (
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
 	"arnobot-shared/db"
-	"arnobot-shared/pkg/errs"
 	"arnobot-shared/storage"
 )
 
@@ -30,7 +29,7 @@ func NewSessionService(
 func (s *SessionService) Create(ctx context.Context, userID int32) (*data.AuthSession, error) {
   fromDB, err := s.storage.Query(ctx).AuthSessionCreate(ctx, userID)
   if err != nil {
-    return nil, errs.ErrAlreadyExists
+    return nil, s.storage.HandleErr(ctx, err)
   }
 
   session := data.NewSessionFromDB(fromDB)
@@ -41,7 +40,7 @@ func (s *SessionService) Create(ctx context.Context, userID int32) (*data.AuthSe
 func (s *SessionService) IsValidToken(ctx context.Context, token string) (bool, error)  {
   status, err := s.storage.Query(ctx).AuthSessionValidate(ctx, token)
   if err != nil {
-    return false, errs.ErrNotFound
+    return false, s.storage.HandleErr(ctx, err)
   }
 
   if status == db.AuthSessionStatusActive {
@@ -54,7 +53,7 @@ func (s *SessionService) IsValidToken(ctx context.Context, token string) (bool, 
 func (s *SessionService) GetTokenOwner(ctx context.Context, token string) (*data.User, error) {
   fromDB, err := s.storage.Query(ctx).AuthSessionGetOwner(ctx, token)
   if err != nil {
-    return nil, errs.ErrNotFound
+    return nil, s.storage.HandleErr(ctx, err)
   }
 
   user := data.NewUserFromDB(fromDB.User)
