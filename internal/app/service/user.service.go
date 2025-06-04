@@ -7,6 +7,8 @@ import (
 	"arnobot-shared/applog"
 	"arnobot-shared/pkg/errs"
 	"arnobot-shared/storage"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -24,11 +26,11 @@ func NewUserService(store storage.Storager) *UserService {
 	}
 }
 
-func (s *UserService) CreateUser(ctx context.Context, username string) (int32, error) {
+func (s *UserService) CreateUser(ctx context.Context, username string) (uuid.UUID, error) {
 	id, err := s.storage.Query(ctx).UserCreate(ctx, username)
 	if err != nil {
-		s.logger.Warn("cannot create user", "err", err)
-		return 0, errs.ErrAlreadyExists
+		s.logger.WarnContext(ctx, "cannot create user", "err", err)
+		return uuid.UUID{}, errs.ErrAlreadyExists
 	}
 
 	return id, nil

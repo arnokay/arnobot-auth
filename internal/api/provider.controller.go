@@ -8,6 +8,8 @@ import (
 	"arnobot-shared/data"
 	"arnobot-shared/pkg/errs"
 	sharedService "arnobot-shared/service"
+
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
 	"arnobot-auth/internal/app/service"
@@ -99,7 +101,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		return err
 	}
 
-	var userID int32
+	var userID uuid.UUID
 
   txCtx, err := c.transactionService.Begin(reqCtx)
   if err != nil {

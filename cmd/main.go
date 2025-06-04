@@ -73,7 +73,7 @@ func main() {
 
 	// load services
 	services := &service.Services{}
-	services.TwitchService = service.NewTwitchApiService(app.cache)
+  services.TwitchApiService = service.NewTwitchApiService(app.cache)
 	services.ProviderService = service.NewAuthProviderService(app.storage)
 	services.UserService = service.NewUserService(app.storage)
 	services.SessionService = service.NewSessionService(app.storage)
@@ -86,7 +86,7 @@ func main() {
 	// load api controllers
 	app.apiControllers = &api.Controllers{
 		ProviderController: api.NewProviderController(
-			app.services.TwitchService,
+			app.services.TwitchApiService,
 			app.services.UserService,
 			app.services.ProviderService,
 			app.services.SessionService,

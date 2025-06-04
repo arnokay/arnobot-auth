@@ -8,6 +8,8 @@ import (
 	"arnobot-shared/data"
 	"arnobot-shared/db"
 	"arnobot-shared/storage"
+
+	"github.com/google/uuid"
 )
 
 type SessionService struct {
@@ -26,7 +28,7 @@ func NewSessionService(
 	}
 }
 
-func (s *SessionService) Create(ctx context.Context, userID int32) (*data.AuthSession, error) {
+func (s *SessionService) Create(ctx context.Context, userID uuid.UUID) (*data.AuthSession, error) {
   fromDB, err := s.storage.Query(ctx).AuthSessionCreate(ctx, userID)
   if err != nil {
     return nil, s.storage.HandleErr(ctx, err)

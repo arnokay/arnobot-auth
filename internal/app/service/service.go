@@ -7,7 +7,7 @@ import (
 )
 
 type Services struct {
-	TwitchService      *TwitchApiService
+	TwitchApiService   *TwitchApiService
 	ProviderService    *AuthProviderService
 	UserService        *UserService
 	SessionService     *SessionService
