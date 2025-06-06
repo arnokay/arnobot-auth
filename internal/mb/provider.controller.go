@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"arnobot-shared/applog"
-	"arnobot-shared/mbtypes"
+	"arnobot-shared/apptype"
 	"arnobot-shared/topics"
 	"github.com/nats-io/nats.go"
 
@@ -35,8 +35,8 @@ func (c *ProviderController) Connect(conn *nats.Conn) {
 }
 
 func (c *ProviderController) get(msg *nats.Msg) {
-	var req mbtypes.AuthProviderGetRequest
-	var res mbtypes.AuthProviderGetResponse
+	var req apptype.AuthProviderGetRequest
+	var res apptype.AuthProviderGetResponse
 
 	err := req.Decode(msg.Data)
 	if err != nil {
@@ -64,8 +64,8 @@ func (c *ProviderController) get(msg *nats.Msg) {
 }
 
 func (c *ProviderController) updateTokens(msg *nats.Msg) {
-	var req mbtypes.AuthProviderUpdateTokensRequest
-	var res mbtypes.AuthProviderUpdateTokensResponse
+	var req apptype.AuthProviderUpdateTokensRequest
+	var res apptype.AuthProviderUpdateTokensResponse
 
 	err := req.Decode(msg.Data)
 	if err != nil {

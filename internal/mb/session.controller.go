@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"arnobot-shared/applog"
-	"arnobot-shared/mbtypes"
+	"arnobot-shared/apptype"
 	"arnobot-shared/apperror"
 	"arnobot-shared/topics"
 
@@ -34,8 +34,8 @@ func (c *SessionController) Connect(conn *nats.Conn) {
 }
 
 func (c *SessionController) exchangeTokenForUser(msg *nats.Msg) {
-	var req mbtypes.AuthSessionTokenRequest
-	var res mbtypes.AuthSessionTokenExchangeResponse
+	var req apptype.AuthSessionTokenRequest
+	var res apptype.AuthSessionTokenExchangeResponse
 
 	req.Decode(msg.Data)
 
@@ -58,8 +58,8 @@ func (c *SessionController) exchangeTokenForUser(msg *nats.Msg) {
 }
 
 func (c *SessionController) validate(msg *nats.Msg) {
-	var req mbtypes.AuthSessionTokenRequest
-	var res mbtypes.AuthSessionTokenValidateResponse
+	var req apptype.AuthSessionTokenRequest
+	var res apptype.AuthSessionTokenValidateResponse
 
 	req.Decode(msg.Data)
 
