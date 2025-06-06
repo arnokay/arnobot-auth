@@ -6,7 +6,7 @@ import (
 
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	sharedService "arnobot-shared/service"
 
 	"github.com/google/uuid"
@@ -66,32 +66,32 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		desc := ctx.QueryParam("error_description")
 		c.logger.WarnContext(reqCtx, "error retrieving code", "error", error, "desc", desc)
 
-		return errs.ErrInvalidInput
+		return apperror.ErrInvalidInput
 	}
 
 	code := ctx.QueryParam("code")
 	if code == "" {
 		c.logger.WarnContext(reqCtx, "no code provided", "url", ctx.Request().RequestURI)
-		return errs.ErrInvalidInput
+		return apperror.ErrInvalidInput
 	}
 
 	state := ctx.QueryParam("state")
 	if state == "" {
 		c.logger.WarnContext(reqCtx, "no state provided", "url", ctx.Request().RequestURI)
-		return errs.ErrInvalidInput
+		return apperror.ErrInvalidInput
 	}
 
 	isStateExists := c.twitchApiService.IsStateExists(reqCtx, state)
 	if !isStateExists {
 		c.logger.WarnContext(reqCtx, "state does not exists", "state", state)
 
-		return errs.ErrInvalidInput
+		return apperror.ErrInvalidInput
 	}
 
 	token, err := c.twitchApiService.ExchangeCode(reqCtx, code)
 	if err != nil {
 		c.logger.ErrorContext(reqCtx, "cannot exchange code", "err", err)
-		return errs.ErrInvalidInput
+		return apperror.ErrInvalidInput
 	}
 
   // TODO: check token.Scopes

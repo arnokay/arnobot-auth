@@ -10,7 +10,7 @@ import (
 	"arnobot-shared/applog"
 	"arnobot-shared/pkg"
 	"arnobot-shared/pkg/assert/panic"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"github.com/nicklaw5/helix/v2"
 	"github.com/thanhpk/randstr"
 
@@ -95,7 +95,7 @@ func (s *TwitchApiService) StoreState(ctx context.Context, state string) error {
 	err := s.cache.Set(state, "")
 	if err != nil {
 		s.logger.Error("cannot store state", "state", state, "err", err)
-		return errs.ErrInternal
+		return apperror.ErrInternal
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func (s *TwitchApiService) ExchangeCode(ctx context.Context, code string) (Provi
 	token, err := s.helix.RequestUserAccessToken(code)
 	if err != nil || token.ErrorMessage != "" {
 		s.logger.WarnContext(ctx, "couldnt exchange code for a token", "code", code, "err", err, "errMsg", token.ErrorMessage)
-		return ProviderToken{}, errs.ErrInternal
+		return ProviderToken{}, apperror.ErrInternal
 	}
 
 	return ProviderToken{
@@ -140,7 +140,7 @@ func (s *TwitchApiService) GetUserInfoFromAccessToken(ctx context.Context, acces
 
 	if len(users.Data.Users) != 1 {
 		s.logger.Error("somehow we got more then one user", "users", users.Data.Users)
-		return helix.User{}, errs.ErrInternal
+		return helix.User{}, apperror.ErrInternal
 	}
 
 	user := users.Data.Users[0]

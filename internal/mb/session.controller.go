@@ -5,7 +5,7 @@ import (
 
 	"arnobot-shared/applog"
 	"arnobot-shared/mbtypes"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"arnobot-shared/topics"
 
 	"github.com/nats-io/nats.go"
@@ -46,7 +46,7 @@ func (c *SessionController) exchangeTokenForUser(msg *nats.Msg) {
 	user, err := c.sessionService.GetTokenOwner(ctx, req.Data)
 	if err != nil {
 		c.logger.DebugContext(ctx, "#exchange: get token owner error", "err", err)
-		res.ToFail(errs.CodeInvalidInput, err.Error())
+		res.ToFail(apperror.CodeInvalidInput, err.Error())
 		b, _ := res.Encode()
 		msg.Respond(b)
 		return
@@ -69,7 +69,7 @@ func (c *SessionController) validate(msg *nats.Msg) {
 
 	isValid, err := c.sessionService.IsValidToken(ctx, req.Data)
 	if err != nil {
-		res.ToFail(errs.CodeInvalidInput, err.Error())
+		res.ToFail(apperror.CodeInvalidInput, err.Error())
 		b, _ := res.Encode()
 		msg.Respond(b)
 		return

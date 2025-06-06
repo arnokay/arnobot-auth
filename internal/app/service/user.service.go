@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"arnobot-shared/applog"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"arnobot-shared/storage"
 
 	"github.com/google/uuid"
@@ -30,7 +30,7 @@ func (s *UserService) CreateUser(ctx context.Context, username string) (uuid.UUI
 	id, err := s.storage.Query(ctx).UserCreate(ctx, username)
 	if err != nil {
 		s.logger.WarnContext(ctx, "cannot create user", "err", err)
-		return uuid.UUID{}, errs.ErrAlreadyExists
+		return uuid.UUID{}, apperror.ErrAlreadyExists
 	}
 
 	return id, nil

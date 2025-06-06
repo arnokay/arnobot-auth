@@ -7,7 +7,7 @@ import (
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
 	"arnobot-shared/db"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"arnobot-shared/storage"
 )
 
@@ -31,7 +31,7 @@ func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCre
 	id, err := s.storage.Query(ctx).AuthProviderCreate(ctx, d.ToDB())
 	if err != nil {
 		s.logger.WarnContext(ctx, "cannot create auth provider", "err", err)
-		return 0, errs.ErrAlreadyExists
+		return 0, apperror.ErrAlreadyExists
 	}
 
 	return int(id), nil
@@ -41,11 +41,11 @@ func (s *AuthProviderService) UpdateTokens(ctx context.Context, id int32, d data
 	count, err := s.storage.Query(ctx).AuthProviderUpdateTokens(ctx, d.ToDB(id))
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot update tokens", "err", err, "provider_id", id)
-		return errs.ErrInternal
+		return apperror.ErrInternal
 	}
 	if count == 0 {
 		s.logger.DebugContext(ctx, "cannot find auth provider", "provider_id", id)
-		return errs.ErrNotFound
+		return apperror.ErrNotFound
 	}
 
 	return nil
@@ -54,12 +54,12 @@ func (s *AuthProviderService) UpdateTokens(ctx context.Context, id int32, d data
 func (s *AuthProviderService) Get(ctx context.Context, arg data.AuthProviderGet) (*data.AuthProvider, error) {
   if arg.ProviderUserID != nil && arg.UserID != nil {
     s.logger.DebugContext(ctx, "error: tried to use providerUserID and userID", "arg", arg)
-    return nil, errs.ErrInvalidInput
+    return nil, apperror.ErrInvalidInput
   }
 	dbProvider, err := s.storage.Query(ctx).AuthProviderGet(ctx, arg.ToDB())
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot find provider", "err", err, "arg", arg)
-		return nil, errs.ErrNotFound
+		return nil, apperror.ErrNotFound
 	}
 
 	provider := data.NewProviderAuthFromDB(dbProvider)
@@ -73,7 +73,7 @@ func (s *AuthProviderService) GetByProviderUserId(ctx context.Context, id string
 		Provider:       providerName,
 	})
 	if err != nil {
-		return nil, errs.ErrNotFound
+		return nil, apperror.ErrNotFound
 	}
 
 	provider := data.NewProviderAuthFromDB(dbProvider)
