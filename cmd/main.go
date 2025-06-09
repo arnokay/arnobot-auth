@@ -10,9 +10,9 @@ import (
 	echoControllers "arnobot-shared/controllers/echo"
 	mbControllers "arnobot-shared/controllers/mb"
 	"arnobot-shared/db"
-	"arnobot-shared/pkg"
+	"arnobot-shared/cache"
 	"arnobot-shared/pkg/assert"
-	"arnobot-shared/pkg/mapcacher"
+	"arnobot-shared/cache/mapcacher"
 	sharedService "arnobot-shared/service"
 	"arnobot-shared/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -34,7 +34,7 @@ type application struct {
 
 	db        *pgxpool.Pool
 	queries   db.Querier
-	cache     pkg.Cacher
+	cache     cache.Cacher
 	msgBroker *nats.Conn
 	api       *echo.Echo
 

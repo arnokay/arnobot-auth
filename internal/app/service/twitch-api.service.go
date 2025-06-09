@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/pkg"
-	"arnobot-shared/pkg/assert/panic"
 	"arnobot-shared/apperror"
+	"arnobot-shared/applog"
+	"arnobot-shared/cache"
+	"arnobot-shared/pkg/assert/panic"
 	"github.com/nicklaw5/helix/v2"
 	"github.com/thanhpk/randstr"
 
@@ -19,14 +19,14 @@ import (
 )
 
 type TwitchApiService struct {
-	cache  pkg.Cacher
+	cache  cache.Cacher
 	helix  *helix.Client
 	logger *slog.Logger
 	cfg    *config.ProviderConfig
 }
 
 func NewTwitchApiService(
-  cache pkg.Cacher,
+	cache cache.Cacher,
 ) *TwitchApiService {
 	cfg, ok := config.Config.Providers["twitch"]
 	assert.Assert(ok, "TwitchService: config is not loaded for \"twitch\" provider")
@@ -92,9 +92,9 @@ func (s *TwitchApiService) GenerateState(ctx context.Context, userId *int) strin
 }
 
 func (s *TwitchApiService) StoreState(ctx context.Context, state string) error {
-	err := s.cache.Set(state, "")
+	err := s.cache.Set(state, []byte{})
 	if err != nil {
-		s.logger.Error("cannot store state", "state", state, "err", err)
+    s.logger.Error("cannot store state", "state", state, "err", err)
 		return apperror.ErrInternal
 	}
 
