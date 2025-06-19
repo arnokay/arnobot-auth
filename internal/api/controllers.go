@@ -2,7 +2,7 @@ package api
 
 import (
   "github.com/labstack/echo/v4"
-  "arnobot-shared/controllers/echo"
+  "github.com/arnokay/arnobot-shared/controllers/echo"
 )
 
 type Controllers struct {

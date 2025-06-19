@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"arnobot-shared/apperror"
-	"arnobot-shared/applog"
-	"arnobot-shared/data"
-	sharedService "arnobot-shared/service"
+	"github.com/arnokay/arnobot-shared/apperror"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/data"
+	sharedService "github.com/arnokay/arnobot-shared/service"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/data"
-	"arnobot-shared/db"
-	"arnobot-shared/storage"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/data"
+	"github.com/arnokay/arnobot-shared/db"
+	"github.com/arnokay/arnobot-shared/storage"
 
 	"github.com/google/uuid"
 )

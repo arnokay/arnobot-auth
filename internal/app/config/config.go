@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"arnobot-shared/pkg/assert"
+	"github.com/arnokay/arnobot-shared/pkg/assert"
 )
 
 const (

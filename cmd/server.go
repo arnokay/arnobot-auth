@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"arnobot-shared/middlewares"
+	"github.com/arnokay/arnobot-shared/middlewares"
 	"github.com/labstack/echo/v4"
 
 	"arnobot-auth/internal/app/config"

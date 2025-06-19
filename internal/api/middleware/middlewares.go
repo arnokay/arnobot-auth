@@ -3,7 +3,7 @@ package middleware
 import (
 	"log/slog"
 
-	"arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/applog"
 )
 
 type Middlewares struct {

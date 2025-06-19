@@ -3,9 +3,9 @@ package mb
 import (
 	"log/slog"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/apptype"
-	"arnobot-shared/topics"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/apptype"
+	"github.com/arnokay/arnobot-shared/topics"
 	"github.com/nats-io/nats.go"
 
 	"arnobot-auth/internal/app/service"
