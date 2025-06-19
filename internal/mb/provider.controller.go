@@ -8,7 +8,7 @@ import (
 	"github.com/arnokay/arnobot-shared/topics"
 	"github.com/nats-io/nats.go"
 
-	"arnobot-auth/internal/app/service"
+	"github.com/arnokay/arnobot-auth/internal/app/service"
 )
 
 type ProviderController struct {

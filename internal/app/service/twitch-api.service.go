@@ -14,8 +14,8 @@ import (
 	"github.com/nicklaw5/helix/v2"
 	"github.com/thanhpk/randstr"
 
-	"arnobot-auth/internal/app"
-	"arnobot-auth/internal/app/config"
+	"github.com/arnokay/arnobot-auth/internal/app"
+	"github.com/arnokay/arnobot-auth/internal/app/config"
 )
 
 type TwitchApiService struct {

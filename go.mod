@@ -1,4 +1,4 @@
-module arnobot-auth
+module github.com/arnokay/arnobot-auth
 
 go 1.23.0
 

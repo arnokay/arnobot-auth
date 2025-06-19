@@ -20,11 +20,11 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 
-	"arnobot-auth/internal/api"
-	"arnobot-auth/internal/api/middleware"
-	"arnobot-auth/internal/app/config"
-	"arnobot-auth/internal/app/service"
-	"arnobot-auth/internal/mb"
+	"github.com/arnokay/arnobot-auth/internal/api"
+	"github.com/arnokay/arnobot-auth/internal/api/middleware"
+	"github.com/arnokay/arnobot-auth/internal/app/config"
+	"github.com/arnokay/arnobot-auth/internal/app/service"
+	"github.com/arnokay/arnobot-auth/internal/mb"
 )
 
 const APP_NAME = "auth"

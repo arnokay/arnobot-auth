@@ -13,8 +13,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
-	"arnobot-auth/internal/app/config"
-	"arnobot-auth/internal/app/service"
+	"github.com/arnokay/arnobot-auth/internal/app/config"
+	"github.com/arnokay/arnobot-auth/internal/app/service"
 )
 
 type providerController struct {
