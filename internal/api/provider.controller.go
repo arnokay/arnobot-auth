@@ -3,15 +3,17 @@ package api
 import (
 	"log/slog"
 	"net/http"
+	"net/url"
 
+	"arnobot-shared/apperror"
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
-	"arnobot-shared/apperror"
 	sharedService "arnobot-shared/service"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
+	"arnobot-auth/internal/app/config"
 	"arnobot-auth/internal/app/service"
 )
 
@@ -117,6 +119,10 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 			AccessToken:  token.AccessToken,
 			RefreshToken: &token.RefreshToken,
 		})
+    if err != nil {
+      c.logger.DebugContext(txCtx, "cannot update provider tokens")
+      return err
+    }
 		userID = provider.UserID
 	} else {
 		c.logger.DebugContext(txCtx, "provider not found, creating user and provider")
@@ -146,11 +152,16 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		return err
 	}
 
+  frontEndURL, _ := url.Parse(config.Config.FrontEndCallback)
+  queryParams := frontEndURL.Query()
+  queryParams.Set("session", session.Token)
+  frontEndURL.RawQuery = queryParams.Encode()
+
   err = c.transactionService.Commit(txCtx)
   if err != nil {
     return err
   }
 
 	// TODO: change to redirect to frontend
-	return ctx.JSON(http.StatusOK, session)
+	return ctx.Redirect(http.StatusPermanentRedirect, frontEndURL.String())
 }

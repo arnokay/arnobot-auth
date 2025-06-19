@@ -15,13 +15,15 @@ const (
 	ENV_TWITCH_CLIENT_ID     = "TWITCH_CLIENT_ID"
 	ENV_TWITCH_CLIENT_SECRET = "TWITCH_CLIENT_SECRET"
 	ENV_TWITCH_REDIRECT_URI  = "TWITCH_REDIRECT_URI"
+	ENV_FRONT_END_CALLBACK   = "FRONT_END_CALLBACK"
 )
 
 type config struct {
-	Global    GlobalConfig
-	DB        DBConfig
-	MB        MBConfig
-	Providers map[string]*ProviderConfig
+	Global           GlobalConfig
+	DB               DBConfig
+	MB               MBConfig
+	Providers        map[string]*ProviderConfig
+	FrontEndCallback string
 }
 
 type GlobalConfig struct {
@@ -81,6 +83,7 @@ func Load() *config {
 	flag.IntVar(&Config.DB.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.IntVar(&Config.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.StringVar(&Config.DB.MaxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
+	flag.StringVar(&Config.FrontEndCallback, "fe-callback", os.Getenv(ENV_FRONT_END_CALLBACK), "where to redirect after creating session")
 
 	flag.StringVar(
 		&twitchProvider.ClientID,
