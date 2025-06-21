@@ -153,9 +153,11 @@ func openMB() (*nats.Conn, jetstream.JetStream, jetstream.KeyValue) {
 	assert.NoError(err, "openMB: cannot open message broker connection")
 
 	js, err := jetstream.New(nc)
+  assert.NoError(err, "openMB: cannot create jetstream")
 	kv, err := js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
 		Bucket: "default-auth",
 	})
+  assert.NoError(err, "openMB: cannot create default kv store")
 
 	return nc, js, kv
 }
