@@ -6,11 +6,11 @@ import (
 )
 
 type Services struct {
-	TwitchAPIService   *TwitchAPIService
+  PlatformAPIService *PlatformAPIService
 	ProviderService    *AuthProviderService
 	UserService        *UserService
 	SessionService     *SessionService
 	TransactionService service.ITransactionService
-	TwitchOAuthService OAuthProvider
+	OAuthService       OAuthProvider
 	WhitelistService   *WhitelistService
 }

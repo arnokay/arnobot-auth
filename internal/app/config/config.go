@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/arnokay/arnobot-shared/pkg/assert"
+	"github.com/arnokay/arnobot-shared/platform"
 )
 
 const (
@@ -24,7 +25,7 @@ type config struct {
 	Global           GlobalConfig
 	DB               DBConfig
 	MB               MBConfig
-	Providers        map[string]*ProviderConfig
+	Providers        map[platform.Platform]*ProviderConfig
 	FrontEndCallback string
 	WhitelistEnabled bool
 }
@@ -60,7 +61,7 @@ func Load() *config {
 			Port:     3000,
 			LogLevel: -4,
 		},
-		Providers: make(map[string]*ProviderConfig),
+		Providers: make(map[platform.Platform]*ProviderConfig),
 	}
 
 	twitchProvider := ProviderConfig{
@@ -69,7 +70,7 @@ func Load() *config {
 		RedirectURI:  os.Getenv(ENV_TWITCH_REDIRECT_URI),
 	}
 
-	Config.Providers["twitch"] = &twitchProvider
+	Config.Providers[platform.Twitch] = &twitchProvider
 
 	if os.Getenv(ENV_PORT) != "" {
 		port, err := strconv.Atoi(os.Getenv(ENV_PORT))

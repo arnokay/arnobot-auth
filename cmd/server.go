@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/arnokay/arnobot-shared/middlewares"
+	"github.com/arnokay/arnobot-shared/validator"
 	"github.com/labstack/echo/v4"
 
 	"github.com/arnokay/arnobot-auth/internal/app/config"
@@ -136,7 +137,11 @@ func startAPIServer(a *application) error {
 	e := echo.New()
 
 	e.HideBanner = true
+	e.HidePort = true
 	a.api = e
+
+	v := validator.New()
+	e.Validator = validator.NewStructValidator(v)
 
 	e.Use(middlewares.AttachTraceID)
 	e.Use(a.apiMiddlewares.AuthMiddlewares.SessionGetOwner)
@@ -148,6 +153,7 @@ func startAPIServer(a *application) error {
 
 	e.HTTPErrorHandler = middlewares.ErrHandler
 
+	a.logger.Info("starting http server", "port", config.Config.Global.Port)
 	err := e.Start(fmt.Sprintf(":%v", config.Config.Global.Port))
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err

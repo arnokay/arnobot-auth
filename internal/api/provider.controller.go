@@ -20,48 +20,64 @@ import (
 )
 
 type providerController struct {
-	twitchAPIService   *service.TwitchAPIService
+	platformAPIService *service.PlatformAPIService
 	providerService    *service.AuthProviderService
 	userService        *service.UserService
 	sessionService     *service.SessionService
 	transactionService sharedService.ITransactionService
 	whitelistService   *service.WhitelistService
-	twitchOAuthService service.OAuthProvider
+	oauthService       service.OAuthProvider
 
 	logger *slog.Logger
 }
 
 func NewProviderController(
-	twitchAPIService *service.TwitchAPIService,
+	platformAPIService *service.PlatformAPIService,
 	userService *service.UserService,
 	providerService *service.AuthProviderService,
 	sessionService *service.SessionService,
 	transactionService sharedService.ITransactionService,
 	whitelistService *service.WhitelistService,
-	twitchOAuthService service.OAuthProvider,
+	oauthService service.OAuthProvider,
 ) *providerController {
 	logger := applog.NewServiceLogger("provider-controller")
 
 	return &providerController{
-		twitchAPIService:   twitchAPIService,
+		platformAPIService: platformAPIService,
 		providerService:    providerService,
 		userService:        userService,
 		sessionService:     sessionService,
 		transactionService: transactionService,
 		whitelistService:   whitelistService,
-		twitchOAuthService: twitchOAuthService,
+		oauthService:       oauthService,
 		logger:             logger,
 	}
 }
 
 func (c *providerController) Routes(parentGroup *echo.Group) {
 	group := parentGroup.Group("/provider")
-	group.GET("/twitch", c.TwitchAuthURL)
-	group.GET("/twitch/callback", c.TwitchCallback)
+	group.GET("/:platform", c.AuthURL)
+	group.GET("/:platform/callback", c.Callback)
 }
 
-func (c *providerController) TwitchAuthURL(ctx echo.Context) error {
+func (c *providerController) AuthURL(ctx echo.Context) error {
 	reqCtx := ctx.Request().Context()
+
+	var payload struct {
+		Platform platform.Platform `param:"platform" validate:"validateFn"`
+	}
+
+	err := ctx.Bind(&payload)
+	if err != nil {
+		c.logger.DebugContext(reqCtx, "cannot bind payload", "err", err)
+		return apperror.ErrInvalidInput
+	}
+
+	err = ctx.Validate(payload)
+	if err != nil {
+		c.logger.DebugContext(ctx.Request().Context(), "failed validation", "err", err)
+		return err
+	}
 
 	var userID uuid.UUID
 
@@ -70,8 +86,8 @@ func (c *providerController) TwitchAuthURL(ctx echo.Context) error {
 		userID = user.ID
 	}
 
-	state := c.twitchOAuthService.CreateState(userID)
-	url, err := c.twitchOAuthService.GetAuthURL(reqCtx, state)
+	state := c.oauthService.CreateState(userID)
+	url, err := c.oauthService.GetAuthURL(reqCtx, payload.Platform, state)
 	if err != nil {
 		return err
 	}
@@ -79,26 +95,50 @@ func (c *providerController) TwitchAuthURL(ctx echo.Context) error {
 	return ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-func (c *providerController) TwitchCallback(ctx echo.Context) error {
+func (c *providerController) Callback(ctx echo.Context) error {
 	reqCtx := ctx.Request().Context()
+
+	var payload struct {
+		Code     string            `query:"code" validate:"required"`
+		State    string            `query:"state" validate:"required"`
+		Platform platform.Platform `param:"platform" validate:"validateFn"`
+	}
+
+	err := ctx.Bind(&payload)
+	if err != nil {
+		c.logger.DebugContext(reqCtx, "cannot bind payload", "err", err)
+		return apperror.ErrInvalidInput
+	}
+
+	err = ctx.Validate(payload)
+	if err != nil {
+		c.logger.DebugContext(ctx.Request().Context(), "failed validation", "err", err)
+		return err
+	}
 
 	frontEndURL, _ := url.Parse(config.Config.FrontEndCallback)
 	queryParams := frontEndURL.Query()
 
-	code := ctx.QueryParam("code")
-	state := ctx.QueryParam("state")
-
-	token, err := c.twitchOAuthService.HandleCallback(reqCtx, code, state)
+	token, err := c.oauthService.HandleCallback(reqCtx, payload.Platform, payload.Code, payload.State)
+	if err != nil {
+		return err
+	}
+	oauthCfg, err := c.oauthService.GetOAuthConfig(payload.Platform)
 	if err != nil {
 		return err
 	}
 
-	twitchUser, err := c.twitchAPIService.GetUserInfoFromAccessToken(reqCtx, token.AccessToken)
+	platformUser, err := c.platformAPIService.GetUserInfoFromToken(
+		reqCtx,
+		payload.Platform,
+		oauthCfg,
+		token,
+	)
 	if err != nil {
 		return err
 	}
 
-	userID := c.twitchOAuthService.ParseState(state)
+	userID := c.oauthService.ParseState(payload.State)
 
 	var whitelistID int32
 
@@ -106,9 +146,9 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		whitelist, err := c.whitelistService.GetOne(reqCtx, data.WhitelistGetOne{
 			Platform:          platform.Twitch,
 			UserID:            &userID,
-			PlatformUserID:    &twitchUser.ID,
-			PlatformUserName:  &twitchUser.DisplayName,
-			PlatformUserLogin: &twitchUser.Login,
+			PlatformUserID:    &platformUser.ID,
+			PlatformUserName:  &platformUser.Name,
+			PlatformUserLogin: &platformUser.Login,
 		})
 		if err != nil {
 			c.logger.DebugContext(reqCtx, "user is not whitelisted, rejecting", "whitelist", whitelist)
@@ -123,7 +163,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 	}
 	defer c.transactionService.Rollback(txCtx)
 
-	provider, err := c.providerService.GetByProviderUserID(txCtx, twitchUser.ID, "twitch")
+	provider, err := c.providerService.GetByProviderUserID(txCtx, platformUser.ID, "twitch")
 	if err != nil {
 		if !errors.Is(err, apperror.ErrNotFound) {
 			return err
@@ -144,7 +184,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		c.logger.DebugContext(txCtx, "provider not found")
 		if userID == uuid.Nil {
 			c.logger.DebugContext(txCtx, "user id is nil, creating user")
-			userID, err = c.userService.CreateUser(txCtx, twitchUser.Login)
+			userID, err = c.userService.CreateUser(txCtx, platformUser.Login)
 			if err != nil {
 				return err
 			}
@@ -158,7 +198,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 			RefreshToken:   token.RefreshToken,
 			AccessType:     token.TokenType,
 			Provider:       "twitch",
-			ProviderUserID: twitchUser.ID,
+			ProviderUserID: platformUser.ID,
 		})
 		if err != nil {
 			return err
@@ -171,14 +211,14 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		_, err := c.whitelistService.UpdateByID(txCtx, whitelistID, data.WhitelistUpdate{
 			Platform:          &p,
 			UserID:            &userID,
-			PlatformUserID:    &twitchUser.ID,
-			PlatformUserName:  &twitchUser.DisplayName,
-			PlatformUserLogin: &twitchUser.Login,
+			PlatformUserID:    &platformUser.ID,
+			PlatformUserName:  &platformUser.Name,
+			PlatformUserLogin: &platformUser.Login,
 		})
-    if err != nil {
-      c.logger.DebugContext(reqCtx, "cannot update whitelist")
-      return err
-    }
+		if err != nil {
+			c.logger.DebugContext(reqCtx, "cannot update whitelist")
+			return err
+		}
 	}
 
 	c.logger.DebugContext(txCtx, "creating session", "userID", userID)

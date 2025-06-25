@@ -10,20 +10,22 @@ import (
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
-	"github.com/arnokay/arnobot-shared/pkg/assert"
+	"github.com/arnokay/arnobot-shared/platform"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/thanhpk/randstr"
 	"golang.org/x/oauth2"
 
 	"github.com/arnokay/arnobot-auth/internal/app"
+	"github.com/arnokay/arnobot-auth/internal/app/config"
 )
 
 type OAuthProvider interface {
-	GetAuthURL(ctx context.Context, state string) (string, error)
+	GetAuthURL(ctx context.Context, platform platform.Platform, state string) (string, error)
 	CreateState(userID uuid.UUID) string
 	ParseState(state string) uuid.UUID
-	HandleCallback(ctx context.Context, code, state string) (*oauth2.Token, error)
+	GetOAuthConfig(platform.Platform) (*oauth2.Config, error)
+	HandleCallback(ctx context.Context, platform platform.Platform, code, state string) (*oauth2.Token, error)
 }
 
 type CacheEntry struct {
@@ -33,21 +35,20 @@ type CacheEntry struct {
 }
 
 type OAuthService struct {
-	config       *oauth2.Config
-	providerName string
-	usePKCE      bool
-	cache        jetstream.KeyValue
+	cache jetstream.KeyValue
 
 	logger *slog.Logger
 }
 
-var providerConfigs = map[string]struct {
+type providerConfig struct {
 	authURL       string
 	tokenURL      string
 	defaultScopes []string
 	usePKCE       bool
-}{
-	"twitch": {
+}
+
+var providerConfigs = map[platform.Platform]providerConfig{
+	platform.Twitch: {
 		authURL:       "https://id.twitch.tv/oauth2/authorize",
 		tokenURL:      "https://id.twitch.tv/oauth2/token",
 		defaultScopes: app.TwitchScopes,
@@ -63,39 +64,11 @@ var providerConfigs = map[string]struct {
 
 func NewOAuthService(
 	cache jetstream.KeyValue,
-	provider,
-	clientID,
-	clientSecret,
-	redirectURI string,
 ) *OAuthService {
 	logger := applog.NewServiceLogger("oauth-service")
 
-	providerConfig, exists := providerConfigs[provider]
-	assert.Assert(exists, "provider config for "+provider+" is missing")
-
-	config := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		RedirectURL:  redirectURI,
-		Scopes:       providerConfig.defaultScopes,
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  providerConfig.authURL,
-			TokenURL: providerConfig.tokenURL,
-		},
-	}
-
-	switch provider {
-	case "twitch":
-		config.Endpoint.AuthStyle = oauth2.AuthStyleInParams
-	default:
-		config.Endpoint.AuthStyle = oauth2.AuthStyleAutoDetect
-	}
-
 	return &OAuthService{
-		config:       config,
-		providerName: provider,
-		usePKCE:      providerConfig.usePKCE,
-		cache:        cache,
+		cache: cache,
 
 		logger: logger,
 	}
@@ -108,6 +81,37 @@ func (o *OAuthService) generateRandomString(length int) string {
 func (o *OAuthService) generateCodeChallenge(verifier string) string {
 	hash := sha256.Sum256([]byte(verifier))
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(hash[:])
+}
+
+func (o *OAuthService) getProviderConfig(platform platform.Platform) (providerConfig, error) {
+	providerCfg, ok := providerConfigs[platform]
+	if !ok {
+		return providerConfig{}, apperror.ErrNotImplemented
+	}
+	return providerCfg, nil
+}
+
+func (o *OAuthService) GetOAuthConfig(p platform.Platform) (*oauth2.Config, error) {
+	providerCfg, err := o.getProviderConfig(p)
+	if err != nil {
+		return nil, err
+	}
+	providerCreds, ok := config.Config.Providers[p]
+	if !ok {
+		return nil, apperror.ErrNotImplemented
+	}
+	config := &oauth2.Config{
+		ClientID:     providerCreds.ClientID,
+		ClientSecret: providerCreds.ClientSecret,
+		RedirectURL:  providerCreds.RedirectURI,
+		Scopes:       providerCfg.defaultScopes,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  providerCfg.authURL,
+			TokenURL: providerCfg.tokenURL,
+		},
+	}
+
+	return config, nil
 }
 
 func (o *OAuthService) CreateState(userID uuid.UUID) string {
@@ -135,7 +139,18 @@ func (o *OAuthService) ParseState(state string) uuid.UUID {
 // GetAuthURL generates auth url using github.com/golang/x/oauth2 package
 //
 // If state is not provided, its gonna generate random state
-func (o *OAuthService) GetAuthURL(ctx context.Context, state string) (string, error) {
+func (o *OAuthService) GetAuthURL(ctx context.Context, platform platform.Platform, state string) (string, error) {
+	providerCfg, err := o.getProviderConfig(platform)
+	if err != nil {
+		o.logger.DebugContext(ctx, "provider config doesnt exist", "platform", platform)
+		return "", err
+	}
+	oauthCfg, err := o.GetOAuthConfig(platform)
+	if err != nil {
+		o.logger.DebugContext(ctx, "oauth config doesnt exist", "platform", platform)
+		return "", err
+	}
+
 	if state == "" {
 		state = o.generateRandomString(42)
 	}
@@ -146,7 +161,7 @@ func (o *OAuthService) GetAuthURL(ctx context.Context, state string) (string, er
 
 	var authCodeOptions []oauth2.AuthCodeOption
 
-	if o.usePKCE {
+	if providerCfg.usePKCE {
 		verifier := o.generateRandomString(43) // 43 is recommended length
 
 		entry.CodeVerifier = verifier
@@ -159,17 +174,33 @@ func (o *OAuthService) GetAuthURL(ctx context.Context, state string) (string, er
 	}
 
 	entryBytes, _ := json.Marshal(entry)
-	_, err := o.cache.Create(ctx, state, entryBytes)
+	_, err = o.cache.Create(ctx, state, entryBytes)
 	if err != nil {
 		o.logger.ErrorContext(ctx, "cannot cache state", "err", err, "entry", entry)
 		return "", apperror.ErrInternal
 	}
 
-	authURL := o.config.AuthCodeURL(state, authCodeOptions...)
+	authURL := oauthCfg.AuthCodeURL(state, authCodeOptions...)
 	return authURL, nil
 }
 
-func (o *OAuthService) HandleCallback(ctx context.Context, code, state string) (*oauth2.Token, error) {
+func (o *OAuthService) HandleCallback(
+	ctx context.Context,
+	platform platform.Platform,
+	code,
+	state string,
+) (*oauth2.Token, error) {
+	providerCfg, err := o.getProviderConfig(platform)
+	if err != nil {
+		o.logger.DebugContext(ctx, "provider config doesnt exist", "platform", platform)
+		return nil, err
+	}
+	oauthCfg, err := o.GetOAuthConfig(platform)
+	if err != nil {
+		o.logger.DebugContext(ctx, "oauth config doesnt exist", "platform", platform)
+		return nil, err
+	}
+
 	if code == "" {
 		o.logger.DebugContext(ctx, "no code provided")
 		return nil, apperror.ErrInvalidInput
@@ -200,13 +231,13 @@ func (o *OAuthService) HandleCallback(ctx context.Context, code, state string) (
 
 	var tokenOptions []oauth2.AuthCodeOption
 
-	if o.usePKCE && entry.CodeVerifier != "" {
+	if providerCfg.usePKCE && entry.CodeVerifier != "" {
 		tokenOptions = append(tokenOptions,
 			oauth2.SetAuthURLParam("code_verifier", entry.CodeVerifier),
 		)
 	}
 
-	token, err := o.config.Exchange(ctx, code, tokenOptions...)
+	token, err := oauthCfg.Exchange(ctx, code, tokenOptions...)
 	if err != nil {
 		o.logger.DebugContext(ctx, "failed to exchange code for token", "err", err)
 		return nil, apperror.ErrExternal

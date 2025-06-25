@@ -53,6 +53,11 @@ func main() {
 	logger := applog.Init(APP_NAME, os.Stdout, cfg.Global.LogLevel)
 	app.logger = logger
 
+  logger.Debug(
+    "config", 
+    "whitelist", cfg.WhitelistEnabled,
+  )
+
 	// load db
 	dbConn := openDB()
 	app.db = dbConn
@@ -68,22 +73,13 @@ func main() {
 
 	// load services
 	services := &service.Services{}
-	services.TwitchAPIService = service.NewTwitchAPIService(app.cache)
+  services.PlatformAPIService = service.NewPlatformAPIService()
 	services.ProviderService = service.NewAuthProviderService(app.storage)
 	services.UserService = service.NewUserService(app.storage)
 	services.SessionService = service.NewSessionService(app.storage)
 	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
 	services.WhitelistService = service.NewWhitelistService(app.storage)
-
-	twitchProviderCfg, ok := config.Config.Providers["twitch"]
-	assert.Assert(ok, "TwitchService: config is not loaded for \"twitch\" provider")
-	services.TwitchOAuthService = service.NewOAuthService(
-		app.cache,
-		"twitch",
-		twitchProviderCfg.ClientID,
-		twitchProviderCfg.ClientSecret,
-		twitchProviderCfg.RedirectURI,
-	)
+	services.OAuthService = service.NewOAuthService(app.cache)
 	app.services = services
 
 	// load middlewares
@@ -94,13 +90,13 @@ func main() {
 	// load api controllers
 	app.apiControllers = &api.Controllers{
 		ProviderController: api.NewProviderController(
-			app.services.TwitchAPIService,
+			app.services.PlatformAPIService,
 			app.services.UserService,
 			app.services.ProviderService,
 			app.services.SessionService,
 			app.services.TransactionService,
 			app.services.WhitelistService,
-			app.services.TwitchOAuthService,
+			app.services.OAuthService,
 		),
 	}
 
