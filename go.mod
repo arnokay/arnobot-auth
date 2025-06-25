@@ -3,7 +3,7 @@ module github.com/arnokay/arnobot-auth
 go 1.24.2
 
 require (
-	github.com/arnokay/arnobot-shared v0.1.1-0.20250624194712-b9682f2893f8
+	github.com/arnokay/arnobot-shared v0.1.1-0.20250625054246-9d0e08ebbeb5
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/labstack/echo/v4 v4.13.3
@@ -32,5 +32,3 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 )
-
-replace github.com/arnokay/arnobot-shared => ../shared
