@@ -42,3 +42,11 @@ func (s *WhitelistService) GetOne(ctx context.Context, d data.WhitelistGetOne) (
 
 	return whitelist, nil
 }
+
+func (s *WhitelistService) UpdateByID(ctx context.Context, id int32, d data.WhitelistUpdate) (data.Whitelist, error) {
+	fromDB, err := s.store.Query(ctx).WhitelistUpdate(ctx, d.ToDB(id))
+	if err != nil {
+		return data.Whitelist{}, s.store.HandleErr(ctx, err)
+	}
+	return data.NewWhitelistFromDB(fromDB), nil
+}

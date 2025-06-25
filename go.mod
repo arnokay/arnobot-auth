@@ -3,7 +3,6 @@ module github.com/arnokay/arnobot-auth
 go 1.24.2
 
 require (
-	github.com/arnokay/arnobot-shared v0.1.1-0.20250625054246-9d0e08ebbeb5
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/labstack/echo/v4 v4.13.3
@@ -14,6 +13,7 @@ require (
 )
 
 require (
+	github.com/arnokay/arnobot-shared v0.1.1-0.20250625072627-a6806a55494e // indirect
 	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

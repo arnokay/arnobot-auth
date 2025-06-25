@@ -10,6 +10,7 @@ import (
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/data"
+	"github.com/arnokay/arnobot-shared/platform"
 	sharedService "github.com/arnokay/arnobot-shared/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -99,9 +100,11 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 
 	userID := c.twitchOAuthService.ParseState(state)
 
+	var whitelistID int32
+
 	if config.Config.WhitelistEnabled {
 		whitelist, err := c.whitelistService.GetOne(reqCtx, data.WhitelistGetOne{
-			Platform:          "twitch",
+			Platform:          platform.Twitch,
 			UserID:            &userID,
 			PlatformUserID:    &twitchUser.ID,
 			PlatformUserName:  &twitchUser.DisplayName,
@@ -111,6 +114,7 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 			c.logger.DebugContext(reqCtx, "user is not whitelisted, rejecting", "whitelist", whitelist)
 			return err
 		}
+		whitelistID = whitelist.ID
 	}
 
 	txCtx, err := c.transactionService.Begin(reqCtx)
@@ -160,6 +164,21 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 			return err
 		}
 		c.logger.DebugContext(txCtx, "created provider", "providerID", providerID)
+	}
+
+	if config.Config.WhitelistEnabled && whitelistID != 0 {
+		p := platform.Twitch
+		_, err := c.whitelistService.UpdateByID(txCtx, whitelistID, data.WhitelistUpdate{
+			Platform:          &p,
+			UserID:            &userID,
+			PlatformUserID:    &twitchUser.ID,
+			PlatformUserName:  &twitchUser.DisplayName,
+			PlatformUserLogin: &twitchUser.Login,
+		})
+    if err != nil {
+      c.logger.DebugContext(reqCtx, "cannot update whitelist")
+      return err
+    }
 	}
 
 	c.logger.DebugContext(txCtx, "creating session", "userID", userID)
