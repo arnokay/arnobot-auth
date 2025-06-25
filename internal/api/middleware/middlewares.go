@@ -7,13 +7,17 @@ import (
 )
 
 type Middlewares struct {
-  logger *slog.Logger
+	AuthMiddlewares *AuthMiddlewares
+
+	logger *slog.Logger
 }
 
-func New() *Middlewares {
-  logger := applog.NewServiceLogger("app-middleware")
+func New(authMiddewares *AuthMiddlewares) *Middlewares {
+	logger := applog.NewServiceLogger("app-middleware")
 
-  return &Middlewares{
-    logger: logger,
-  }
+	return &Middlewares{
+		AuthMiddlewares: authMiddewares,
+
+		logger: logger,
+	}
 }

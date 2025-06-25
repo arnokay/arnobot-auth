@@ -10,6 +10,7 @@ require (
 	github.com/nats-io/nats.go v1.41.2
 	github.com/nicklaw5/helix/v2 v2.31.1
 	github.com/thanhpk/randstr v1.0.6
+	golang.org/x/oauth2 v0.30.0
 )
 
 require (
@@ -31,3 +32,5 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 )
+
+replace github.com/arnokay/arnobot-shared => ../shared

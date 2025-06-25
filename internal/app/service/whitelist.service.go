@@ -1,0 +1,44 @@
+package service
+
+import (
+	"context"
+	"log/slog"
+
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/data"
+	"github.com/arnokay/arnobot-shared/storage"
+)
+
+type WhitelistService struct {
+	store  storage.Storager
+	logger *slog.Logger
+}
+
+func NewWhitelistService(store storage.Storager) *WhitelistService {
+	logger := applog.NewServiceLogger("whitelist-service")
+
+	return &WhitelistService{
+		store:  store,
+		logger: logger,
+	}
+}
+
+func (s *WhitelistService) GetOne(ctx context.Context, d data.WhitelistGetOne) (data.Whitelist, error) {
+	fromDB, err := s.store.Query(ctx).WhitelistGetOne(ctx, d.ToDB())
+	if err != nil {
+		s.logger.DebugContext(
+			ctx,
+			"cannot find in whitelist",
+			"platform", d.Platform,
+			"uid", d.UserID,
+			"puid", d.PlatformUserID,
+			"pun", d.PlatformUserName,
+			"pul", d.PlatformUserLogin,
+		)
+		return data.Whitelist{}, s.store.HandleErr(ctx, err)
+	}
+
+	whitelist := data.NewWhitelistFromDB(fromDB)
+
+	return whitelist, nil
+}

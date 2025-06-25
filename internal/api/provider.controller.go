@@ -1,15 +1,16 @@
 package api
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/url"
 
+	"github.com/arnokay/arnobot-shared/appctx"
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/data"
 	sharedService "github.com/arnokay/arnobot-shared/service"
-
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
@@ -18,30 +19,36 @@ import (
 )
 
 type providerController struct {
-	twitchApiService   *service.TwitchApiService
+	twitchAPIService   *service.TwitchAPIService
 	providerService    *service.AuthProviderService
 	userService        *service.UserService
 	sessionService     *service.SessionService
 	transactionService sharedService.ITransactionService
+	whitelistService   *service.WhitelistService
+	twitchOAuthService service.OAuthProvider
 
 	logger *slog.Logger
 }
 
 func NewProviderController(
-	twitchApiService *service.TwitchApiService,
+	twitchAPIService *service.TwitchAPIService,
 	userService *service.UserService,
 	providerService *service.AuthProviderService,
 	sessionService *service.SessionService,
 	transactionService sharedService.ITransactionService,
+	whitelistService *service.WhitelistService,
+	twitchOAuthService service.OAuthProvider,
 ) *providerController {
 	logger := applog.NewServiceLogger("provider-controller")
 
 	return &providerController{
-		twitchApiService:   twitchApiService,
+		twitchAPIService:   twitchAPIService,
 		providerService:    providerService,
 		userService:        userService,
 		sessionService:     sessionService,
 		transactionService: transactionService,
+		whitelistService:   whitelistService,
+		twitchOAuthService: twitchOAuthService,
 		logger:             logger,
 	}
 }
@@ -55,7 +62,18 @@ func (c *providerController) Routes(parentGroup *echo.Group) {
 func (c *providerController) TwitchAuthURL(ctx echo.Context) error {
 	reqCtx := ctx.Request().Context()
 
-	url := c.twitchApiService.GenerateAuthURL(reqCtx, nil)
+	var userID uuid.UUID
+
+	user := appctx.GetUser(reqCtx)
+	if user != nil {
+		userID = user.ID
+	}
+
+	state := c.twitchOAuthService.CreateState(userID)
+	url, err := c.twitchOAuthService.GetAuthURL(reqCtx, state)
+	if err != nil {
+		return err
+	}
 
 	return ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
@@ -63,75 +81,73 @@ func (c *providerController) TwitchAuthURL(ctx echo.Context) error {
 func (c *providerController) TwitchCallback(ctx echo.Context) error {
 	reqCtx := ctx.Request().Context()
 
-	error := ctx.QueryParam("error")
-	if error != "" {
-		desc := ctx.QueryParam("error_description")
-		c.logger.WarnContext(reqCtx, "error retrieving code", "error", error, "desc", desc)
-
-		return apperror.ErrInvalidInput
-	}
+	frontEndURL, _ := url.Parse(config.Config.FrontEndCallback)
+	queryParams := frontEndURL.Query()
 
 	code := ctx.QueryParam("code")
-	if code == "" {
-		c.logger.WarnContext(reqCtx, "no code provided", "url", ctx.Request().RequestURI)
-		return apperror.ErrInvalidInput
-	}
-
 	state := ctx.QueryParam("state")
-	if state == "" {
-		c.logger.WarnContext(reqCtx, "no state provided", "url", ctx.Request().RequestURI)
-		return apperror.ErrInvalidInput
-	}
 
-	isStateExists := c.twitchApiService.IsStateExists(reqCtx, state)
-	if !isStateExists {
-		c.logger.WarnContext(reqCtx, "state does not exists", "state", state)
-
-		return apperror.ErrInvalidInput
-	}
-
-	token, err := c.twitchApiService.ExchangeCode(reqCtx, code)
-	if err != nil {
-		c.logger.ErrorContext(reqCtx, "cannot exchange code", "err", err)
-		return apperror.ErrInvalidInput
-	}
-
-  // TODO: check token.Scopes
-
-	twitchUser, err := c.twitchApiService.GetUserInfoFromAccessToken(reqCtx, token.AccessToken)
+	token, err := c.twitchOAuthService.HandleCallback(reqCtx, code, state)
 	if err != nil {
 		return err
 	}
 
-	var userID uuid.UUID
+	twitchUser, err := c.twitchAPIService.GetUserInfoFromAccessToken(reqCtx, token.AccessToken)
+	if err != nil {
+		return err
+	}
 
-  txCtx, err := c.transactionService.Begin(reqCtx)
-  if err != nil {
-    return err
-  }
-  defer c.transactionService.Rollback(txCtx)
+	userID := c.twitchOAuthService.ParseState(state)
 
-  // TODO: add database level errors handling so you could distinguish NotFound and Connection errors
-	provider, _ := c.providerService.GetByProviderUserId(txCtx, twitchUser.ID, "twitch")
+	if config.Config.WhitelistEnabled {
+		whitelist, err := c.whitelistService.GetOne(reqCtx, data.WhitelistGetOne{
+			Platform:          "twitch",
+			UserID:            &userID,
+			PlatformUserID:    &twitchUser.ID,
+			PlatformUserName:  &twitchUser.DisplayName,
+			PlatformUserLogin: &twitchUser.Login,
+		})
+		if err != nil {
+			c.logger.DebugContext(reqCtx, "user is not whitelisted, rejecting", "whitelist", whitelist)
+			return err
+		}
+	}
+
+	txCtx, err := c.transactionService.Begin(reqCtx)
+	if err != nil {
+		return err
+	}
+	defer c.transactionService.Rollback(txCtx)
+
+	provider, err := c.providerService.GetByProviderUserID(txCtx, twitchUser.ID, "twitch")
+	if err != nil {
+		if !errors.Is(err, apperror.ErrNotFound) {
+			return err
+		}
+	}
 	if provider != nil {
 		c.logger.DebugContext(txCtx, "provider already exists, updating tokens", "providerID", provider.ID)
 		err = c.providerService.UpdateTokens(txCtx, provider.ID, data.AuthProviderUpdateTokens{
 			AccessToken:  token.AccessToken,
 			RefreshToken: &token.RefreshToken,
 		})
-    if err != nil {
-      c.logger.DebugContext(txCtx, "cannot update provider tokens")
-      return err
-    }
-		userID = provider.UserID
-	} else {
-		c.logger.DebugContext(txCtx, "provider not found, creating user and provider")
-		userID, err = c.userService.CreateUser(txCtx, twitchUser.Login)
 		if err != nil {
+			c.logger.DebugContext(txCtx, "cannot update provider tokens")
 			return err
 		}
+		userID = provider.UserID
+	} else {
+		c.logger.DebugContext(txCtx, "provider not found")
+		if userID == uuid.Nil {
+			c.logger.DebugContext(txCtx, "user id is nil, creating user")
+			userID, err = c.userService.CreateUser(txCtx, twitchUser.Login)
+			if err != nil {
+				return err
+			}
+			c.logger.DebugContext(txCtx, "created user", "userID", userID)
+		}
 
-		c.logger.DebugContext(txCtx, "created user", "userID", userID)
+		c.logger.DebugContext(txCtx, "creating provider")
 		providerID, err := c.providerService.Create(txCtx, data.AuthProviderCreate{
 			UserID:         userID,
 			AccessToken:    token.AccessToken,
@@ -152,15 +168,13 @@ func (c *providerController) TwitchCallback(ctx echo.Context) error {
 		return err
 	}
 
-  frontEndURL, _ := url.Parse(config.Config.FrontEndCallback)
-  queryParams := frontEndURL.Query()
-  queryParams.Set("session", session.Token)
-  frontEndURL.RawQuery = queryParams.Encode()
+	queryParams.Set("session", session.Token)
+	frontEndURL.RawQuery = queryParams.Encode()
 
-  err = c.transactionService.Commit(txCtx)
-  if err != nil {
-    return err
-  }
+	err = c.transactionService.Commit(txCtx)
+	if err != nil {
+		return err
+	}
 
 	// TODO: change to redirect to frontend
 	return ctx.Redirect(http.StatusPermanentRedirect, frontEndURL.String())

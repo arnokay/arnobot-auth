@@ -10,9 +10,7 @@ import (
 	echoControllers "github.com/arnokay/arnobot-shared/controllers/echo"
 	mbControllers "github.com/arnokay/arnobot-shared/controllers/mb"
 	"github.com/arnokay/arnobot-shared/db"
-	"github.com/arnokay/arnobot-shared/cache"
 	"github.com/arnokay/arnobot-shared/pkg/assert"
-	"github.com/arnokay/arnobot-shared/cache/mapcacher"
 	sharedService "github.com/arnokay/arnobot-shared/service"
 	"github.com/arnokay/arnobot-shared/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -34,7 +32,7 @@ type application struct {
 
 	db        *pgxpool.Pool
 	queries   db.Querier
-	cache     cache.Cacher
+	cache     jetstream.KeyValue
 	msgBroker *nats.Conn
 	api       *echo.Echo
 
@@ -59,13 +57,10 @@ func main() {
 	dbConn := openDB()
 	app.db = dbConn
 
-	// load cache
-	cache := mapcacher.New()
-	app.cache = &cache
-
 	// load message broker
-	mbConn, _, _ := openMB()
+	mbConn, _, kvstore := openMB()
 	app.msgBroker = mbConn
+	app.cache = kvstore
 
 	// load storage
 	store := storage.NewStorage(app.db)
@@ -73,24 +68,39 @@ func main() {
 
 	// load services
 	services := &service.Services{}
-  services.TwitchApiService = service.NewTwitchApiService(app.cache)
+	services.TwitchAPIService = service.NewTwitchAPIService(app.cache)
 	services.ProviderService = service.NewAuthProviderService(app.storage)
 	services.UserService = service.NewUserService(app.storage)
 	services.SessionService = service.NewSessionService(app.storage)
 	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
+	services.WhitelistService = service.NewWhitelistService(app.storage)
+
+	twitchProviderCfg, ok := config.Config.Providers["twitch"]
+	assert.Assert(ok, "TwitchService: config is not loaded for \"twitch\" provider")
+	services.TwitchOAuthService = service.NewOAuthService(
+		app.cache,
+		"twitch",
+		twitchProviderCfg.ClientID,
+		twitchProviderCfg.ClientSecret,
+		twitchProviderCfg.RedirectURI,
+	)
 	app.services = services
 
 	// load middlewares
-	app.apiMiddlewares = middleware.New()
+	app.apiMiddlewares = middleware.New(
+		middleware.NewAuthMiddlewares(app.services.SessionService),
+	)
 
 	// load api controllers
 	app.apiControllers = &api.Controllers{
 		ProviderController: api.NewProviderController(
-			app.services.TwitchApiService,
+			app.services.TwitchAPIService,
 			app.services.UserService,
 			app.services.ProviderService,
 			app.services.SessionService,
 			app.services.TransactionService,
+			app.services.WhitelistService,
+			app.services.TwitchOAuthService,
 		),
 	}
 
@@ -153,11 +163,11 @@ func openMB() (*nats.Conn, jetstream.JetStream, jetstream.KeyValue) {
 	assert.NoError(err, "openMB: cannot open message broker connection")
 
 	js, err := jetstream.New(nc)
-  assert.NoError(err, "openMB: cannot create jetstream")
+	assert.NoError(err, "openMB: cannot create jetstream")
 	kv, err := js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
 		Bucket: "default-auth",
 	})
-  assert.NoError(err, "openMB: cannot create default kv store")
+	assert.NoError(err, "openMB: cannot create default kv store")
 
 	return nc, js, kv
 }

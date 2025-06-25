@@ -17,6 +17,7 @@ const (
 	ENV_TWITCH_REDIRECT_URI  = "TWITCH_REDIRECT_URI"
 	ENV_FRONT_END_CALLBACK   = "FRONT_END_CALLBACK"
 	ENV_MB_URL               = "MB_URL"
+	ENV_WHITELIST_ENABLED    = "WHITELIST_ENABLED"
 )
 
 type config struct {
@@ -25,6 +26,7 @@ type config struct {
 	MB               MBConfig
 	Providers        map[string]*ProviderConfig
 	FrontEndCallback string
+	WhitelistEnabled bool
 }
 
 type GlobalConfig struct {
@@ -77,6 +79,7 @@ func Load() *config {
 
 	flag.StringVar(&Config.Global.Env, "env", "development", "Environment (development|staging|production)")
 
+  flag.BoolVar(&Config.WhitelistEnabled, "whitelist", false, "enable whitelist")
 	flag.IntVar(&Config.Global.Port, "port", Config.Global.Port, "Server Port")
 	flag.IntVar(&Config.Global.LogLevel, "log-level", Config.Global.LogLevel, "Minimal Log Level (default: -4)")
 

@@ -1,23 +1,16 @@
+// application services
 package service
 
 import (
-	"time"
-
 	"github.com/arnokay/arnobot-shared/service"
 )
 
 type Services struct {
-	TwitchApiService   *TwitchApiService
+	TwitchAPIService   *TwitchAPIService
 	ProviderService    *AuthProviderService
 	UserService        *UserService
 	SessionService     *SessionService
 	TransactionService service.ITransactionService
-}
-
-type ProviderToken struct {
-	AccessToken  string
-	RefreshToken string
-	TokenType    string
-	Scopes       []string
-	Expiry       time.Time
+	TwitchOAuthService OAuthProvider
+	WhitelistService   *WhitelistService
 }
