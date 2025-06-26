@@ -27,6 +27,15 @@ var TwitchScopes = []string{
   "moderator:read:vips",
 }
 
+var KickScopes = []string{
+  "user:read",
+  "channel:read",
+  "channel:write",
+  "chat:write",
+  "events:subscribe",
+  "moderation:ban",
+}
+
 func IsScopesEqual(first []string, second []string) bool {
   if len(first) != len(second) {
     return false

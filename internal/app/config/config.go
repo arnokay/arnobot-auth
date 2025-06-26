@@ -16,6 +16,9 @@ const (
 	ENV_TWITCH_CLIENT_ID     = "TWITCH_CLIENT_ID"
 	ENV_TWITCH_CLIENT_SECRET = "TWITCH_CLIENT_SECRET"
 	ENV_TWITCH_REDIRECT_URI  = "TWITCH_REDIRECT_URI"
+	ENV_KICK_CLIENT_ID       = "KICK_CLIENT_ID"
+	ENV_KICK_CLIENT_SECRET   = "KICK_CLIENT_SECRET"
+	ENV_KICK_REDIRECT_URI    = "KICK_REDIRECT_URI"
 	ENV_FRONT_END_CALLBACK   = "FRONT_END_CALLBACK"
 	ENV_MB_URL               = "MB_URL"
 	ENV_WHITELIST_ENABLED    = "WHITELIST_ENABLED"
@@ -69,8 +72,14 @@ func Load() *config {
 		ClientSecret: os.Getenv(ENV_TWITCH_CLIENT_SECRET),
 		RedirectURI:  os.Getenv(ENV_TWITCH_REDIRECT_URI),
 	}
+	kickProvider := ProviderConfig{
+		ClientID:     os.Getenv(ENV_KICK_CLIENT_ID),
+		ClientSecret: os.Getenv(ENV_KICK_CLIENT_SECRET),
+		RedirectURI:  os.Getenv(ENV_KICK_REDIRECT_URI),
+	}
 
 	Config.Providers[platform.Twitch] = &twitchProvider
+	Config.Providers[platform.Kick] = &kickProvider
 
 	if os.Getenv(ENV_PORT) != "" {
 		port, err := strconv.Atoi(os.Getenv(ENV_PORT))
@@ -80,7 +89,7 @@ func Load() *config {
 
 	flag.StringVar(&Config.Global.Env, "env", "development", "Environment (development|staging|production)")
 
-  flag.BoolVar(&Config.WhitelistEnabled, "whitelist", false, "enable whitelist")
+	flag.BoolVar(&Config.WhitelistEnabled, "whitelist", false, "enable whitelist")
 	flag.IntVar(&Config.Global.Port, "port", Config.Global.Port, "Server Port")
 	flag.IntVar(&Config.Global.LogLevel, "log-level", Config.Global.LogLevel, "Minimal Log Level (default: -4)")
 
@@ -90,25 +99,6 @@ func Load() *config {
 	flag.StringVar(&Config.DB.MaxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
 	flag.StringVar(&Config.FrontEndCallback, "fe-callback", os.Getenv(ENV_FRONT_END_CALLBACK), "where to redirect after creating session")
 	flag.StringVar(&Config.MB.URL, "mb-url", os.Getenv(ENV_MB_URL), "Message Broker URL")
-
-	flag.StringVar(
-		&twitchProvider.ClientID,
-		"provider-twitch-client-id",
-		os.Getenv(ENV_TWITCH_CLIENT_ID),
-		"Twitch Provider Client ID",
-	)
-	flag.StringVar(
-		&twitchProvider.ClientSecret,
-		"privder-twitch-client-secret",
-		os.Getenv(ENV_TWITCH_CLIENT_SECRET),
-		"Twitch Provider Client Secret",
-	)
-	flag.StringVar(
-		&twitchProvider.RedirectURI,
-		"provider-twitch-redirect-uri",
-		os.Getenv(ENV_TWITCH_REDIRECT_URI),
-		"Twitch Provider Redirect URI",
-	)
 
 	flag.Parse()
 

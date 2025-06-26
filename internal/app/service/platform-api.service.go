@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
@@ -110,9 +111,52 @@ func (s *PlatformAPIService) getAdapter(p platform.Platform) PlatformAPIAdapter 
 	switch p {
 	case platform.Twitch:
 		return &TwitchAdapter{}
+	case platform.Kick:
+		return &KickAdapter{}
 	default:
 		return nil
 	}
+}
+
+type KickAdapter struct{}
+
+func (a *KickAdapter) GetPlatform() platform.Platform {
+	return platform.Kick
+}
+
+func (a *KickAdapter) GetUserInfo(ctx context.Context, client *http.Client) (*data.PlatformUser, error) {
+	resp, err := client.Get("https://api.kick.com/public/v1/users")
+	if err != nil {
+		return nil, fmt.Errorf("kick api request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("kick api returned status %d", resp.StatusCode)
+	}
+
+	var response struct {
+		Data []struct {
+			UserID int    `json:"user_id"`
+			Name   string `json:"name"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode twitch response: %w", err)
+	}
+
+	if len(response.Data) == 0 {
+		return nil, fmt.Errorf("no user data returned from twitch")
+	}
+
+	user := response.Data[0]
+	return &data.PlatformUser{
+		ID:       strconv.Itoa(user.UserID),
+		Login:    user.Name,
+		Name:     user.Name,
+		Platform: a.GetPlatform(),
+	}, nil
 }
 
 type TwitchAdapter struct{}

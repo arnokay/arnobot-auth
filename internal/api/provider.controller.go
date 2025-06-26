@@ -197,7 +197,7 @@ func (c *providerController) Callback(ctx echo.Context) error {
 			AccessToken:    token.AccessToken,
 			RefreshToken:   token.RefreshToken,
 			AccessType:     token.TokenType,
-			Provider:       "twitch",
+			Provider:       payload.Platform.String(),
 			ProviderUserID: platformUser.ID,
 		})
 		if err != nil {

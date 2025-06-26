@@ -59,7 +59,7 @@ func (s *AuthProviderService) Get(ctx context.Context, arg data.AuthProviderGet)
 	dbProvider, err := s.storage.Query(ctx).AuthProviderGet(ctx, arg.ToDB())
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot find provider", "err", err, "arg", arg)
-		return nil, apperror.ErrNotFound
+		return nil, s.storage.HandleErr(ctx, err)
 	}
 
 	provider := data.NewProviderAuthFromDB(dbProvider)

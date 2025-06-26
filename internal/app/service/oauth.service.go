@@ -54,12 +54,12 @@ var providerConfigs = map[platform.Platform]providerConfig{
 		defaultScopes: app.TwitchScopes,
 		usePKCE:       false,
 	},
-	// "kick": {
-	// 	authURL:       "https://kick.com/oauth2/authorize",
-	// 	tokenURL:      "https://kick.com/oauth2/token",
-	// 	defaultScopes: []string{"user:read"},
-	// 	usePKCE:       true,
-	// },
+	platform.Kick: {
+		authURL:       "https://id.kick.com/oauth/authorize",
+		tokenURL:      "https://id.kick.com/oauth/token",
+		defaultScopes: app.KickScopes,
+		usePKCE:       true,
+	},
 }
 
 func NewOAuthService(
@@ -139,15 +139,15 @@ func (o *OAuthService) ParseState(state string) uuid.UUID {
 // GetAuthURL generates auth url using github.com/golang/x/oauth2 package
 //
 // If state is not provided, its gonna generate random state
-func (o *OAuthService) GetAuthURL(ctx context.Context, platform platform.Platform, state string) (string, error) {
-	providerCfg, err := o.getProviderConfig(platform)
+func (o *OAuthService) GetAuthURL(ctx context.Context, p platform.Platform, state string) (string, error) {
+	providerCfg, err := o.getProviderConfig(p)
 	if err != nil {
-		o.logger.DebugContext(ctx, "provider config doesnt exist", "platform", platform)
+		o.logger.DebugContext(ctx, "provider config doesnt exist", "platform", p)
 		return "", err
 	}
-	oauthCfg, err := o.GetOAuthConfig(platform)
+	oauthCfg, err := o.GetOAuthConfig(p)
 	if err != nil {
-		o.logger.DebugContext(ctx, "oauth config doesnt exist", "platform", platform)
+		o.logger.DebugContext(ctx, "oauth config doesnt exist", "platform", p)
 		return "", err
 	}
 
@@ -181,6 +181,7 @@ func (o *OAuthService) GetAuthURL(ctx context.Context, platform platform.Platfor
 	}
 
 	authURL := oauthCfg.AuthCodeURL(state, authCodeOptions...)
+
 	return authURL, nil
 }
 
