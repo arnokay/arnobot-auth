@@ -227,6 +227,12 @@ func (c *providerController) Callback(ctx echo.Context) error {
 		return err
 	}
 
+  err = c.sessionService.DeleteOld(txCtx, userID)
+  if err != nil {
+    c.logger.DebugContext(txCtx, "cannot delete old sessions", "userID", userID)
+    return err
+  }
+
 	queryParams.Set("session", session.Token)
 	frontEndURL.RawQuery = queryParams.Encode()
 
