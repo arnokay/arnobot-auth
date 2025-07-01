@@ -3,9 +3,10 @@ package mb
 import (
 	"log/slog"
 
+	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apptype"
-	"github.com/arnokay/arnobot-shared/apperror"
+	"github.com/arnokay/arnobot-shared/data"
 	"github.com/arnokay/arnobot-shared/topics"
 
 	"github.com/nats-io/nats.go"
@@ -34,8 +35,8 @@ func (c *SessionController) Connect(conn *nats.Conn) {
 }
 
 func (c *SessionController) exchangeTokenForUser(msg *nats.Msg) {
-	var req apptype.AuthSessionTokenRequest
-	var res apptype.AuthSessionTokenExchangeResponse
+	var req apptype.Request[string]
+	var res apptype.Response[*data.User]
 
 	req.Decode(msg.Data)
 
@@ -58,8 +59,8 @@ func (c *SessionController) exchangeTokenForUser(msg *nats.Msg) {
 }
 
 func (c *SessionController) validate(msg *nats.Msg) {
-	var req apptype.AuthSessionTokenRequest
-	var res apptype.AuthSessionTokenValidateResponse
+	var req apptype.Request[string]
+	var res apptype.Response[bool]
 
 	req.Decode(msg.Data)
 

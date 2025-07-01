@@ -171,9 +171,10 @@ func (c *providerController) Callback(ctx echo.Context) error {
 	}
 	if provider != nil {
 		c.logger.DebugContext(txCtx, "provider already exists, updating tokens", "providerID", provider.ID)
-		err = c.providerService.UpdateTokens(txCtx, provider.ID, data.AuthProviderUpdateTokens{
+		err = c.providerService.UpdateTokens(txCtx, data.AuthProviderUpdateTokens{
+			ID:           provider.ID,
 			AccessToken:  token.AccessToken,
-			RefreshToken: &token.RefreshToken,
+			RefreshToken: token.RefreshToken,
 		})
 		if err != nil {
 			c.logger.DebugContext(txCtx, "cannot update provider tokens")
@@ -227,11 +228,11 @@ func (c *providerController) Callback(ctx echo.Context) error {
 		return err
 	}
 
-  err = c.sessionService.DeleteOld(txCtx, userID)
-  if err != nil {
-    c.logger.DebugContext(txCtx, "cannot delete old sessions", "userID", userID)
-    return err
-  }
+	err = c.sessionService.DeleteOld(txCtx, userID)
+	if err != nil {
+		c.logger.DebugContext(txCtx, "cannot delete old sessions", "userID", userID)
+		return err
+	}
 
 	queryParams.Set("session", session.Token)
 	frontEndURL.RawQuery = queryParams.Encode()

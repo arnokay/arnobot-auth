@@ -27,8 +27,8 @@ func NewAuthProviderService(store storage.Storager) *AuthProviderService {
 	}
 }
 
-func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCreate) (int, error) {
-	id, err := s.storage.Query(ctx).AuthProviderCreate(ctx, d.ToDB())
+func (s *AuthProviderService) Create(ctx context.Context, arg data.AuthProviderCreate) (int, error) {
+	id, err := s.storage.Query(ctx).AuthProviderCreate(ctx, arg.ToDB())
 	if err != nil {
 		s.logger.WarnContext(ctx, "cannot create auth provider", "err", err)
 		return 0, apperror.ErrAlreadyExists
@@ -37,14 +37,14 @@ func (s *AuthProviderService) Create(ctx context.Context, d data.AuthProviderCre
 	return int(id), nil
 }
 
-func (s *AuthProviderService) UpdateTokens(ctx context.Context, id int32, d data.AuthProviderUpdateTokens) error {
-	count, err := s.storage.Query(ctx).AuthProviderUpdateTokens(ctx, d.ToDB(id))
+func (s *AuthProviderService) UpdateTokens(ctx context.Context, arg data.AuthProviderUpdateTokens) error {
+	count, err := s.storage.Query(ctx).AuthProviderUpdateTokens(ctx, arg.ToDB())
 	if err != nil {
-		s.logger.ErrorContext(ctx, "cannot update tokens", "err", err, "provider_id", id)
+		s.logger.ErrorContext(ctx, "cannot update tokens", "err", err, "provider_id", arg.ID)
 		return apperror.ErrInternal
 	}
 	if count == 0 {
-		s.logger.DebugContext(ctx, "cannot find auth provider", "provider_id", id)
+		s.logger.DebugContext(ctx, "cannot find auth provider", "provider_id", arg.ID)
 		return apperror.ErrNotFound
 	}
 

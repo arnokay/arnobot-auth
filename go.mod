@@ -3,7 +3,7 @@ module github.com/arnokay/arnobot-auth
 go 1.24.4
 
 require (
-	github.com/arnokay/arnobot-shared v0.1.1-0.20250628202534-73aff044efde
+	github.com/arnokay/arnobot-shared v0.1.1-0.20250701121129-2933b27b7504
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/labstack/echo/v4 v4.13.3

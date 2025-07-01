@@ -5,6 +5,7 @@ import (
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apptype"
+	"github.com/arnokay/arnobot-shared/data"
 	"github.com/arnokay/arnobot-shared/topics"
 	"github.com/nats-io/nats.go"
 
@@ -35,8 +36,8 @@ func (c *ProviderController) Connect(conn *nats.Conn) {
 }
 
 func (c *ProviderController) get(msg *nats.Msg) {
-	var req apptype.AuthProviderGetRequest
-	var res apptype.AuthProviderGetResponse
+	var req apptype.Request[data.AuthProviderGet]
+	var res apptype.Response[*data.AuthProvider]
 
 	err := req.Decode(msg.Data)
 	if err != nil {
@@ -64,8 +65,8 @@ func (c *ProviderController) get(msg *nats.Msg) {
 }
 
 func (c *ProviderController) updateTokens(msg *nats.Msg) {
-	var req apptype.AuthProviderUpdateTokensRequest
-	var res apptype.AuthProviderUpdateTokensResponse
+	var req apptype.Request[data.AuthProviderUpdateTokens]
+	var res apptype.EmptyResponse
 
 	err := req.Decode(msg.Data)
 	if err != nil {
@@ -79,7 +80,7 @@ func (c *ProviderController) updateTokens(msg *nats.Msg) {
 	defer cancel()
   res.TraceID = req.TraceID
 
-	err = c.providerService.UpdateTokens(ctx, req.Data.ID, req.Data.Data)
+	err = c.providerService.UpdateTokens(ctx, req.Data)
 	if err != nil {
 		res.ToFailErr(err)
 		b, _ := res.Encode()
