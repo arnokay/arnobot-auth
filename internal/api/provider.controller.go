@@ -144,7 +144,7 @@ func (c *providerController) Callback(ctx echo.Context) error {
 
 	if config.Config.WhitelistEnabled {
 		whitelist, err := c.whitelistService.GetOne(reqCtx, data.WhitelistGetOne{
-			Platform:          platform.Twitch,
+			Platform:          payload.Platform,
 			UserID:            &userID,
 			PlatformUserID:    &platformUser.ID,
 			PlatformUserName:  &platformUser.Name,
@@ -163,7 +163,7 @@ func (c *providerController) Callback(ctx echo.Context) error {
 	}
 	defer c.transactionService.Rollback(txCtx)
 
-	provider, err := c.providerService.GetByProviderUserID(txCtx, platformUser.ID, "twitch")
+	provider, err := c.providerService.GetByProviderUserID(txCtx, platformUser.ID, payload.Platform.String())
 	if err != nil {
 		if !errors.Is(err, apperror.ErrNotFound) {
 			return err
@@ -208,9 +208,8 @@ func (c *providerController) Callback(ctx echo.Context) error {
 	}
 
 	if config.Config.WhitelistEnabled && whitelistID != 0 {
-		p := platform.Twitch
 		_, err := c.whitelistService.UpdateByID(txCtx, whitelistID, data.WhitelistUpdate{
-			Platform:          &p,
+			Platform:          &payload.Platform,
 			UserID:            &userID,
 			PlatformUserID:    &platformUser.ID,
 			PlatformUserName:  &platformUser.Name,
