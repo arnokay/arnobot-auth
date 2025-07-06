@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"log/slog"
+	
 	"strings"
 
 	"github.com/arnokay/arnobot-shared/apperror"
@@ -37,7 +37,7 @@ type CacheEntry struct {
 type OAuthService struct {
 	cache jetstream.KeyValue
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 type providerConfig struct {

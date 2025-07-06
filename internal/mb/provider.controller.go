@@ -1,7 +1,7 @@
 package mb
 
 import (
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apptype"
@@ -13,7 +13,7 @@ import (
 )
 
 type ProviderController struct {
-	logger *slog.Logger
+	logger applog.Logger
 
 	providerService *service.AuthProviderService
 }

@@ -1,7 +1,7 @@
 package mb
 
 import (
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
@@ -17,7 +17,7 @@ import (
 type SessionController struct {
 	sessionService *service.SessionService
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 func NewSessionController(sessionService *service.SessionService) *SessionController {

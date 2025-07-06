@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apperror"
@@ -14,7 +14,7 @@ import (
 type UserService struct {
 	storage storage.Storager
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 func NewUserService(store storage.Storager) *UserService {

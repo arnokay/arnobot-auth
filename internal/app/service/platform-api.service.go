@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
+	
 	"net/http"
 	"strconv"
 
@@ -21,7 +21,7 @@ type PlatformAPIAdapter interface {
 }
 
 type PlatformAPIService struct {
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 type clientIDTransport struct {

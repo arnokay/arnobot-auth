@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-	"log/slog"
+	
 	"net/http"
 	"net/url"
 
@@ -28,7 +28,7 @@ type providerController struct {
 	whitelistService   *service.WhitelistService
 	oauthService       service.OAuthProvider
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 func NewProviderController(

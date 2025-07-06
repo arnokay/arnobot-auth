@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
@@ -13,7 +13,7 @@ import (
 
 type AuthProviderService struct {
 	storage storage.Storager
-	logger  *slog.Logger
+	logger  applog.Logger
 }
 
 func NewAuthProviderService(store storage.Storager) *AuthProviderService {

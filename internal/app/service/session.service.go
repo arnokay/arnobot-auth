@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/data"
@@ -13,7 +13,7 @@ import (
 
 type SessionService struct {
 	storage storage.Storager
-	logger  *slog.Logger
+	logger  applog.Logger
 }
 
 func NewSessionService(

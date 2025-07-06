@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log/slog"
+	
 	"strings"
 
 	"github.com/arnokay/arnobot-shared/appctx"
@@ -15,7 +15,7 @@ import (
 type AuthMiddlewares struct {
 	sessionService *service.SessionService
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 func NewAuthMiddlewares(sessionService *service.SessionService) *AuthMiddlewares {
